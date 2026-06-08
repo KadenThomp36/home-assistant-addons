@@ -33,9 +33,10 @@ to live in its own herdr workspace + agent rather than continuing inline here.
    ```
    (Optionally append a base dir: `... spawn.sh <slug> /config/herdr-context`.)
    The script: creates `<base>/<slug>/CLAUDE.md` → symlink to the dump (auto-inherit),
-   installs the herdr claude integration (idempotent), creates a named workspace
-   showing the dump in its pane, and launches a uniquely-named `claude` agent whose
-   cwd is the project dir so it loads the dump as `CLAUDE.md`.
+   installs the herdr claude integration (idempotent), and creates a named workspace
+   with a **single pane** = a uniquely-named `claude` agent whose cwd is the project
+   dir, so it auto-loads the dump as `CLAUDE.md`. (The dump stays on disk and as the
+   agent's `CLAUDE.md`; no separate "context" pane is created.)
 5. **Report** the workspace + agent to the user, and stay in this session as the
    coordinator. Do per-project work inside the new workspace.
 
