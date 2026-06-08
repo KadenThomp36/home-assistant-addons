@@ -56,3 +56,9 @@ focus_agent = "alt+ctrl+1..9"
 
 [ui.sound]
 enabled = true
+
+[session]
+# Resume Claude/agent panes in their native conversation sessions after a herdr
+# server restart (addon/HA/host reboot). This is herdr's default; pinned here so
+# it survives any future default change and ships with the addon.
+resume_agents_on_restore = true

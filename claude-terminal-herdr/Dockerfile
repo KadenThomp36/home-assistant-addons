@@ -20,6 +20,7 @@ RUN apk add --no-cache \
     jq \
     tree \
     tmux \
+    coreutils \
     yq
 
 # Install Claude Code CLI via npm (avoids musl binary compatibility issues)
@@ -41,6 +42,10 @@ RUN chmod +x /usr/local/bin/herdr
 # Default herdr config (seeded to the persistent /data location on first run by run.sh)
 RUN mkdir -p /opt/herdr
 COPY config.toml /opt/herdr/config.toml
+
+# Claude Code statusline (installed to ~/.claude on every start by run.sh)
+COPY statusline/ /opt/statusline/
+RUN chmod +x /opt/statusline/*.sh
 
 # Copy startup script and modular scripts
 COPY run.sh /run.sh

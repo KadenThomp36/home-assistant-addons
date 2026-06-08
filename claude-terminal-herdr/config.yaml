@@ -1,7 +1,7 @@
 ---
 name: "Claude Terminal (herdr)"
 description: "Claude Code CLI in a herdr workspace multiplexer (agent-aware panes/tabs/workspaces), persistent auth"
-version: "2.2.2-herdr2"
+version: "2.2.2-herdr3"
 slug: "claude_terminal_herdr"
 init: false
 

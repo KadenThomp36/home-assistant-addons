@@ -107,7 +107,7 @@ migrate_legacy_auth_files() {
 # Install required tools
 install_tools() {
     bashio::log.info "Installing additional tools..."
-    if ! apk add --no-cache ttyd jq curl tmux; then
+    if ! apk add --no-cache ttyd jq curl tmux coreutils; then
         bashio::log.error "Failed to install required tools"
         exit 1
     fi
@@ -428,6 +428,29 @@ setup_ha_mcp() {
     fi
 }
 
+# Install the Claude Code statusline (shipped with the addon, not user-specific).
+# Copies the vendored script into ~/.claude/statusline and merges the statusLine
+# key into ~/.claude/settings.json without clobbering other settings.
+install_statusline() {
+    local src="/opt/statusline/statusline.sh"
+    [ -f "$src" ] || { bashio::log.warning "statusline script missing; skipping"; return; }
+    mkdir -p "$HOME/.claude/statusline"
+    cp -f "$src" "$HOME/.claude/statusline/statusline.sh"
+    chmod +x "$HOME/.claude/statusline/statusline.sh"
+    python3 - "$HOME/.claude/settings.json" <<'PY'
+import json, os, sys
+p = sys.argv[1]
+try:
+    d = json.load(open(p)) if os.path.exists(p) and os.path.getsize(p) > 0 else {}
+except Exception:
+    d = {}
+d["statusLine"] = {"type": "command", "command": "~/.claude/statusline/statusline.sh"}
+os.makedirs(os.path.dirname(p), exist_ok=True)
+json.dump(d, open(p, "w"), indent=2)
+PY
+    bashio::log.info "Claude statusline installed (~/.claude/statusline/statusline.sh)"
+}
+
 # Main execution
 main() {
     bashio::log.info "Initializing Claude Terminal add-on..."
@@ -437,6 +460,7 @@ main() {
 
     init_environment
     install_tools
+    install_statusline
     setup_session_picker
     install_persistent_packages
     generate_ha_context
