@@ -451,6 +451,17 @@ PY
     bashio::log.info "Claude statusline installed (~/.claude/statusline/statusline.sh)"
 }
 
+# Install bundled Claude skills (e.g. spawn-project) into ~/.claude/skills.
+# Shipped with the addon (not user-specific); refreshed on every start.
+install_skills() {
+    local src="/opt/skills"
+    [ -d "$src" ] || return
+    mkdir -p "$HOME/.claude/skills"
+    cp -a "$src/." "$HOME/.claude/skills/"
+    find "$HOME/.claude/skills" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
+    bashio::log.info "Bundled Claude skills installed to ~/.claude/skills"
+}
+
 # Main execution
 main() {
     bashio::log.info "Initializing Claude Terminal add-on..."
@@ -461,6 +472,7 @@ main() {
     init_environment
     install_tools
     install_statusline
+    install_skills
     setup_session_picker
     install_persistent_packages
     generate_ha_context

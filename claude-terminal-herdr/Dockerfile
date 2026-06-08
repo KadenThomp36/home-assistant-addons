@@ -47,6 +47,10 @@ COPY config.toml /opt/herdr/config.toml
 COPY statusline/ /opt/statusline/
 RUN chmod +x /opt/statusline/*.sh
 
+# Bundled Claude skills (installed to ~/.claude/skills on every start by run.sh)
+COPY skills/ /opt/skills/
+RUN find /opt/skills -name '*.sh' -exec chmod +x {} \;
+
 # Copy startup script and modular scripts
 COPY run.sh /run.sh
 COPY scripts/ /opt/scripts/
