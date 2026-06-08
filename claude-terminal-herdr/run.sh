@@ -302,6 +302,59 @@ get_claude_launch_command() {
     fi
 }
 
+# Build a custom ttyd index.html that adds an OSC 52 clipboard handler.
+# ttyd/xterm.js ignores OSC 52 by default, so herdr's copy never reaches the
+# browser clipboard. ttyd serves a single self-contained index.html and exposes
+# the xterm Terminal as window.term, so we capture ttyd's own served HTML from a
+# throwaway instance, inject our handler before </body>, and serve that via -I.
+# Sets global OSC52_INDEX to the generated file on success; leaves it empty on
+# failure so the terminal still launches normally (never break the addon).
+OSC52_INDEX=""
+build_osc52_index() {
+    local handler="/opt/scripts/osc52-handler.html"
+    local out="/data/ttyd-osc52-index.html"
+    local base="/tmp/ttyd-base-index.html"
+    local tmpport=7699
+
+    [ -f "$handler" ] || { bashio::log.warning "OSC52 handler snippet missing; clipboard copy will be limited"; return; }
+
+    # Capture ttyd's embedded frontend from a throwaway instance on localhost.
+    ttyd --port "$tmpport" --interface 127.0.0.1 bash -c 'sleep 8' >/dev/null 2>&1 &
+    local tp=$!
+    local ok=""
+    for _ in $(seq 1 25); do
+        if curl -fsS "http://127.0.0.1:${tmpport}/" -o "$base" 2>/dev/null && [ -s "$base" ]; then
+            ok=1; break
+        fi
+        sleep 0.3
+    done
+    kill "$tp" 2>/dev/null || true
+
+    if [ -z "$ok" ]; then
+        bashio::log.warning "Could not capture ttyd frontend for OSC52 injection; launching without it"
+        return
+    fi
+
+    # Inject the handler before </body> (fallback: append).
+    if python3 - "$handler" "$base" "$out" <<'PY'
+import sys
+handler = open(sys.argv[1]).read()
+html = open(sys.argv[2]).read()
+marker = "</body>"
+if marker in html:
+    html = html.replace(marker, handler + "\n" + marker, 1)
+else:
+    html = html + "\n" + handler
+open(sys.argv[3], "w").write(html)
+PY
+    then
+        OSC52_INDEX="$out"
+        bashio::log.info "OSC52 clipboard handler injected -> $out"
+    else
+        bashio::log.warning "OSC52 index injection failed; launching without it"
+    fi
+}
+
 
 # Start main web terminal
 start_web_terminal() {
@@ -326,6 +379,14 @@ start_web_terminal() {
     # This disables tmux mouse mode since ttyd has better mouse handling for web terminals
     export TTYD=1
 
+    # Build the OSC52-enabled custom index so herdr's copy reaches the browser clipboard.
+    build_osc52_index
+    local index_opt=()
+    if [ -n "${OSC52_INDEX:-}" ] && [ -f "${OSC52_INDEX:-}" ]; then
+        index_opt=(--index "$OSC52_INDEX")
+        bashio::log.info "Serving OSC52-enabled frontend via --index"
+    fi
+
     # Terminal theme - dark palette with terracotta accents (#d97757)
     local ttyd_theme='{"background":"#1a1b26","foreground":"#c0caf5","cursor":"#d97757","cursorAccent":"#1a1b26","selectionBackground":"#33467c","selectionForeground":"#c0caf5","black":"#15161e","red":"#f7768e","green":"#9ece6a","yellow":"#e0af68","blue":"#7aa2f7","magenta":"#bb9af7","cyan":"#7dcfff","white":"#a9b1d6","brightBlack":"#414868","brightRed":"#f7768e","brightGreen":"#9ece6a","brightYellow":"#e0af68","brightBlue":"#7aa2f7","brightMagenta":"#bb9af7","brightCyan":"#7dcfff","brightWhite":"#c0caf5"}'
 
@@ -335,6 +396,7 @@ start_web_terminal() {
         --port "${port}" \
         --interface 0.0.0.0 \
         --writable \
+        "${index_opt[@]}" \
         --ping-interval 30 \
         --client-option enableReconnect=true \
         --client-option reconnect=10 \

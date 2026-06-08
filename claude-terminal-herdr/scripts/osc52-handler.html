@@ -1,0 +1,58 @@
+<script>
+/* OSC 52 clipboard bridge for ttyd/xterm.js.
+ * xterm.js ignores OSC 52 by default, so herdr's "copy" (which emits OSC 52
+ * over the PTY) never reaches the browser clipboard. ttyd exposes the xterm
+ * Terminal as window.term; we register a handler that decodes the base64
+ * payload and writes it to the real browser clipboard. HA ingress is HTTPS
+ * (secure context), so navigator.clipboard.writeText is allowed; we keep an
+ * execCommand fallback for any permission/gesture edge cases. */
+(function () {
+  function fallbackCopy(text) {
+    try {
+      var el = document.createElement('textarea');
+      el.value = text;
+      el.style.position = 'fixed';
+      el.style.top = '-1000px';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    } catch (e) {}
+  }
+  function register(term) {
+    try {
+      term.parser.registerOscHandler(52, function (data) {
+        // data is "<selection>;<base64>" e.g. "c;SGVsbG8="
+        var i = data.indexOf(';');
+        if (i === -1) return false;
+        var b64 = data.substring(i + 1);
+        if (!b64 || b64 === '?') return false; // empty or read-request: ignore
+        try {
+          var bin = atob(b64);
+          var bytes = new Uint8Array(bin.length);
+          for (var k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+          var text = new TextDecoder().decode(bytes);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
+          } else {
+            fallbackCopy(text);
+          }
+        } catch (e) {}
+        return true; // handled
+      });
+    } catch (e) {}
+  }
+  // window.term is created when a client attaches; poll for it.
+  var tries = 0;
+  var iv = setInterval(function () {
+    if (window.term && window.term.parser) {
+      register(window.term);
+      clearInterval(iv);
+    } else if (++tries > 600) { // ~60s
+      clearInterval(iv);
+    }
+  }, 100);
+})();
+</script>
