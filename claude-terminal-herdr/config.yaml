@@ -1,0 +1,59 @@
+---
+name: "Claude Terminal (herdr)"
+description: "Claude Code CLI in a herdr workspace multiplexer (agent-aware panes/tabs/workspaces), persistent auth"
+version: "2.2.2-herdr1"
+slug: "claude_terminal_herdr"
+init: false
+
+# Supported architectures
+# Vendored herdr binary is amd64 (static-pie); restrict to amd64.
+arch:
+  - amd64
+
+# External resources
+url: "https://github.com/KadenThomp36/home-assistant-addons"
+
+# Web interface configuration
+ingress: true
+ingress_port: 7681
+panel_icon: mdi:cow            # herd
+panel_title: "Claude (herdr)"
+panel_admin: true
+
+# Port configuration
+ports:
+  7681/tcp: null
+ports_description:
+  7681/tcp: "Web terminal (not required for ingress)"
+
+# Add-on configuration options
+options:
+  auto_launch_claude: true
+  ha_smart_context: true
+  enable_ha_mcp: true
+  persistent_apk_packages: []
+  persistent_pip_packages: []
+schema:
+  auto_launch_claude: bool?
+  ha_smart_context: bool?
+  enable_ha_mcp: bool?
+  persistent_apk_packages:
+    - str
+  persistent_pip_packages:
+    - str
+
+# Volume mappings for file access
+map:
+  - config:rw    # Access to Home Assistant configuration files
+
+# API access for Home Assistant integration
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+auth_api: true
+
+# Service startup configuration
+startup: services
+
+# Web UI access URL
+webui: http://[HOST]:[PORT:7681]/

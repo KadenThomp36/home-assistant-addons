@@ -1,0 +1,58 @@
+onboarding = false
+
+[ui]
+show_agent_labels_on_pane_borders = true
+
+agent_panel_scope = "all"
+[ui.toast]
+delivery = "herdr"
+
+[keys]
+# SAND-style keybinds mirroring Ghostty (cmd → alt)
+
+# Workspaces
+new_workspace = "alt+shift+n"
+rename_workspace = "alt+shift+w"
+close_workspace = "alt+shift+x"
+workspace_picker = "alt+shift+s"
+previous_workspace = "alt+shift+up"
+next_workspace = "alt+shift+down"
+
+# Worktrees
+new_worktree = "alt+shift+g"
+open_worktree = "alt+shift+o"
+remove_worktree = "alt+shift+backspace"
+
+# S - Split
+split_vertical = "alt+d"
+split_horizontal = "alt+shift+d"
+
+# A - Across (tabs)
+new_tab = "alt+t"
+previous_tab = "alt+shift+left"
+next_tab = "alt+shift+right"
+rename_tab = "alt+shift+t"
+close_tab = "alt+shift+c"
+switch_tab = "alt+1..9"
+
+# N - Navigate (between panes)
+focus_pane_left = "alt+ctrl+left"
+focus_pane_right = "alt+ctrl+right"
+focus_pane_up = "alt+ctrl+up"
+focus_pane_down = "alt+ctrl+down"
+cycle_pane_next = "alt+tab"
+cycle_pane_previous = "alt+shift+tab"
+zoom = "alt+shift+f"
+resize_mode = "alt+r"
+
+# D - Destroy
+close_pane = "alt+w"
+
+# UI
+toggle_sidebar = "alt+b"
+detach = "alt+q"
+goto = "alt+g"
+focus_agent = "alt+ctrl+1..9"
+
+[ui.sound]
+enabled = true
