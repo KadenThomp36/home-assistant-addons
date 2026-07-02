@@ -3,7 +3,8 @@ onboarding = false
 [ui]
 show_agent_labels_on_pane_borders = true
 
-agent_panel_scope = "all"
+# agent_panel_scope was removed in herdr 0.7.0 (#318): the Agents panel now
+# always shows all agents (previously the "all" behavior we pinned here).
 [ui.toast]
 delivery = "herdr"
 

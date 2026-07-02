@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2-herdr6
+
+### ⬆️ Dependency Updates
+- **Bumped vendored herdr binary from 0.6.8 to [0.7.1](https://github.com/ogulcancelik/herdr/releases/tag/v0.7.1)** (stable channel)
+  - Covers herdr 0.6.9–0.7.1: directional pane swap/move, local plugin v1 support, more agent integrations (Kimi, Droid, Kilo, Cursor, Devin), client/server protocol bump to 14, and numerous input/rendering/worktree fixes
+  - Removed the now-obsolete `agent_panel_scope = "all"` setting from the bundled `config.toml` — the Agents panel always shows all agents as of herdr 0.7.0 (#318), so the option no longer exists
+- **Claude Code CLI**: no Dockerfile pin to bump — the image already installs `@anthropic-ai/claude-code@latest` at build time, so rebuilding picks up the current npm `latest` (2.1.198 as of this release) automatically
+
 ## 2.2.2
 
 ### 🐛 Bug Fixes
