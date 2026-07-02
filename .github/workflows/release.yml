@@ -19,24 +19,35 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Determine add-on directory
+        id: addon
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          case "$version" in
+            *-herdr*) echo "dir=claude-terminal-herdr" >> "$GITHUB_OUTPUT" ;;
+            *)        echo "dir=claude-terminal" >> "$GITHUB_OUTPUT" ;;
+          esac
+
       - name: Validate tag matches config.yaml
         run: |
-          config_version=$(grep '^version:' claude-terminal/config.yaml | sed 's/version: *"\?\([^"]*\)"\?/\1/')
+          addon_dir="${{ steps.addon.outputs.dir }}"
+          config_version=$(grep '^version:' "$addon_dir/config.yaml" | sed 's/version: *"\?\([^"]*\)"\?/\1/')
           tag_version="${{ steps.version.outputs.version }}"
           if [ "$config_version" != "$tag_version" ]; then
-            echo "::error::Tag version ($tag_version) does not match config.yaml version ($config_version)"
+            echo "::error::Tag version ($tag_version) does not match $addon_dir/config.yaml version ($config_version)"
             exit 1
           fi
-          echo "Version $tag_version validated"
+          echo "Version $tag_version validated against $addon_dir/config.yaml"
 
       - name: Extract changelog for this version
         id: changelog
         run: |
           version="${{ steps.version.outputs.version }}"
+          addon_dir="${{ steps.addon.outputs.dir }}"
           # Extract content between this version's header and the next ## header
           awk -v ver="$version" \
             'BEGIN{found=0} /^## /{if(found)exit; if($2==ver)found=1; next} found{print}' \
-            claude-terminal/CHANGELOG.md > /tmp/changelog.md
+            "$addon_dir/CHANGELOG.md" > /tmp/changelog.md
           if [ ! -s /tmp/changelog.md ]; then
             echo "::warning::No changelog entry found for version $version"
             echo "Release $version" > /tmp/changelog.md
