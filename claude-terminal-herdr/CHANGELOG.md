@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.2-herdr8
+
+### ✨ New Features
+- **GHOSTWIRE theming across the whole add-on** — phosphor mint (`#2ee6a6`) on deep slate (`#0a0e14`), matching the desktop Ghostty/herdr rice:
+  - **ttyd web terminal**: palette switched from the terracotta/Tokyo Night theme to the GHOSTWIRE 16-color palette
+  - **herdr**: bundled `config.toml` now ships a `[theme]` section (vesper base + custom overrides, transparent `panel_bg`); existing installs get the theme appended on next start unless they already define their own `[theme]`
+  - **Claude Code**: riced at image build via [tweakcc](https://github.com/Piebald-AI/tweakcc) (vendored `tweakcc.config.json`) — Ghostwire theme, hacker thinking verbs, breathing-dot spinner, styled user messages, and input pattern highlighters. Applied with the safe visual `--patches` subset only (a bare `--apply` corrupts the install); best-effort with a `claude --version` build check so a tweakcc failure can never brick the image
+
 ## 2.2.2-herdr7
 
 ### ⬆️ Dependency Updates

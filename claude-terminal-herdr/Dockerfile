@@ -27,6 +27,18 @@ RUN apk add --no-cache \
 RUN npm install -g @anthropic-ai/claude-code@latest \
     && npm cache clean --force
 
+# Apply the GHOSTWIRE Claude Code rice via tweakcc (theme, thinking verbs,
+# spinner, input highlighters). Visual --patches subset only: a bare --apply
+# corrupts the install (system-prompt re-injection breaks template escaping).
+# Best-effort (|| true) so a tweakcc/Claude version mismatch never breaks the
+# image; the follow-up `claude --version` hard-fails the build if the patch
+# left the install unlaunchable.
+COPY tweakcc.config.json /root/.tweakcc/config.json
+RUN npx -y tweakcc@latest --apply --patches "themes,thinking-verbs,thinker-symbol-chars,thinker-symbol-width,thinker-symbol-mirror,input-pattern-highlighters,user-message-display,input-chevron-color" || true
+RUN claude --version \
+    && rm -rf /root/.tweakcc/native-* /root/.tweakcc/prompt-data-cache /root/.tweakcc/system-prompts \
+    && npm cache clean --force
+
 # Install uv for running ha-mcp (Python package manager/runner)
 # ha-mcp requires Python 3.13+, uv handles this automatically
 RUN apk add --no-cache uv
