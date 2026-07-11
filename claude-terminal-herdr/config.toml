@@ -63,3 +63,26 @@ enabled = true
 # server restart (addon/HA/host reboot). This is herdr's default; pinned here so
 # it survives any future default change and ships with the addon.
 resume_agents_on_restore = true
+
+# GHOSTWIRE theme — phosphor mint on deep slate, matching the ttyd palette.
+# NOTE: keep this [theme] section LAST in this file — run.sh extracts it with
+# `sed -n '/^\[theme\]/,$p'` to retrofit existing seeded configs.
+[theme]
+name = "vesper"
+
+[theme.custom]
+panel_bg = "reset"       # transparent — let the outer terminal background show
+accent = "#2ee6a6"
+text = "#b3c2ce"
+subtext0 = "#8595a3"
+surface0 = "#131a22"
+surface1 = "#1b2530"
+overlay0 = "#3d4a56"
+overlay1 = "#55636f"
+green = "#37d99e"
+red = "#f26d78"
+yellow = "#e2c488"
+blue = "#6cb2ff"
+teal = "#53d3e0"
+mauve = "#b394f0"
+peach = "#f0a56c"

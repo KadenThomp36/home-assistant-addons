@@ -51,6 +51,13 @@ init_environment() {
     if [ ! -f "$config_dir/herdr/config.toml" ] && [ -f /opt/herdr/config.toml ]; then
         cp /opt/herdr/config.toml "$config_dir/herdr/config.toml"
         bashio::log.info "herdr config seeded to $config_dir/herdr/config.toml"
+    elif [ -f "$config_dir/herdr/config.toml" ] && [ -f /opt/herdr/config.toml ] \
+        && ! grep -q '^\[theme\]' "$config_dir/herdr/config.toml" \
+        && grep -q '^\[theme\]' /opt/herdr/config.toml; then
+        # Retrofit the bundled theme into configs seeded before it existed.
+        # Users who set their own [theme] are left alone.
+        sed -n '/^\[theme\]/,$p' /opt/herdr/config.toml >> "$config_dir/herdr/config.toml"
+        bashio::log.info "herdr GHOSTWIRE theme appended to existing config"
     fi
 
     bashio::log.info "Environment initialized:"
@@ -387,8 +394,9 @@ start_web_terminal() {
         bashio::log.info "Serving OSC52-enabled frontend via --index"
     fi
 
-    # Terminal theme - dark palette with terracotta accents (#d97757)
-    local ttyd_theme='{"background":"#1a1b26","foreground":"#c0caf5","cursor":"#d97757","cursorAccent":"#1a1b26","selectionBackground":"#33467c","selectionForeground":"#c0caf5","black":"#15161e","red":"#f7768e","green":"#9ece6a","yellow":"#e0af68","blue":"#7aa2f7","magenta":"#bb9af7","cyan":"#7dcfff","white":"#a9b1d6","brightBlack":"#414868","brightRed":"#f7768e","brightGreen":"#9ece6a","brightYellow":"#e0af68","brightBlue":"#7aa2f7","brightMagenta":"#bb9af7","brightCyan":"#7dcfff","brightWhite":"#c0caf5"}'
+    # Terminal theme - GHOSTWIRE: phosphor mint (#2ee6a6) on deep slate (#0a0e14),
+    # matching the Ghostty theme and the bundled herdr [theme] section
+    local ttyd_theme='{"background":"#0a0e14","foreground":"#b3c2ce","cursor":"#2ee6a6","cursorAccent":"#0a0e14","selectionBackground":"#143029","selectionForeground":"#dfe9ef","black":"#131a22","red":"#f26d78","green":"#37d99e","yellow":"#e2c488","blue":"#6cb2ff","magenta":"#b394f0","cyan":"#53d3e0","white":"#b3c2ce","brightBlack":"#3d4a56","brightRed":"#ff8a94","brightGreen":"#4ef0b0","brightYellow":"#f2d8a0","brightBlue":"#8fc7ff","brightMagenta":"#ccadf7","brightCyan":"#7ce4ee","brightWhite":"#e6eef4"}'
 
     # Run ttyd with keepalive configuration to prevent WebSocket disconnects
     # See: https://github.com/heytcass/home-assistant-addons/issues/24
