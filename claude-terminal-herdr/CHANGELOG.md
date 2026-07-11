@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.2-herdr7
+
+### ⬆️ Dependency Updates
+- **Bumped vendored herdr binary from 0.7.1 to [0.7.3](https://github.com/ogulcancelik/herdr/releases/tag/v0.7.3)** (stable channel)
+  - 0.7.2: shell completions, `ui.sidebar_collapsed_mode = "hidden"`, `ui.hide_tab_bar_when_single_tab`, richer socket API (session snapshots, layout/scroll events, terminal session observe/control), MastraCode integration, and a large batch of input/agent-detection fixes (Copilot CLI, Grok Build, OpenCode, Pi/OMP state)
+  - 0.7.3: session-navigator search fixes, socket API done-agent focus fix, reduced cursor flicker during redraws, and workspace-picker navigation fixes
+  - No changes needed to the bundled `config.toml` — no options we pin were removed or renamed
+- **Claude Code CLI**: no Dockerfile pin to bump — the image installs `@anthropic-ai/claude-code@latest` at build time, so rebuilding picks up the current npm `latest` automatically
+
 ## 2.2.2-herdr6
 
 ### ⬆️ Dependency Updates
