@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.2-herdr9
+
+### ✨ New Features
+- **Corgi connector (herdr remote management bridge)** — the add-on can now be managed remotely by [Corgi](https://corgi.tail2c61c0.ts.net), the multi-server herdr hub:
+  - New vendored `scripts/corgi-connector.js` (zero-dependency Node daemon): proxies the herdr socket API (`/rpc`), streams herdr events and live transcript tails over SSE (`/events`, `/transcript-stream`), lists/serves Claude transcripts for full-text indexing (`/transcripts`, `/transcript`), and lists installed Claude skills (`/skills`) — all behind bearer-token auth
+  - New option **`corgi_connector_token`** (default empty = connector disabled) and port mapping **9130/tcp** (host default 9130)
+  - Started from `run.sh` only when a token is configured; logs to `/data/corgi-connector.log`
+
+### ⬆️ Dependency Updates
+- **Bumped vendored herdr binary from 0.7.3 to [0.7.4](https://github.com/ogulcancelik/herdr/releases/tag/v0.7.4)** (stable): session-modal popup panes, `ui.copy_on_select`, configurable sidebar row layouts + metadata tokens, copy-mode literal search & word motions, Maki agent support, packed sidebar layout by default, and a batch of agent-detection/live-handoff/plugin fixes
+  - Bundled `config.toml` unaffected — 0.7.4 only adds options; nothing we pin was removed or renamed
+
 ## 2.2.2-herdr8
 
 ### ✨ New Features

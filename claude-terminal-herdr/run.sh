@@ -470,6 +470,25 @@ install_skills() {
     bashio::log.info "Bundled Claude skills installed to ~/.claude/skills"
 }
 
+# Start the Corgi connector (remote management bridge for the Corgi hub) when a
+# token is configured. Zero-dependency Node daemon; serves the herdr socket API,
+# herdr events, and Claude transcripts over HTTP with bearer-token auth on :9130.
+start_corgi_connector() {
+    local token
+    token=$(bashio::config 'corgi_connector_token' '')
+    if [ -z "$token" ] || [ "$token" = "null" ]; then
+        bashio::log.info "Corgi connector disabled (set corgi_connector_token to enable)"
+        return
+    fi
+    CORGI_TOKEN="$token" \
+    CORGI_PORT=9130 \
+    CORGI_BIND=0.0.0.0 \
+    HERDR_SOCK="$XDG_CONFIG_HOME/herdr/herdr.sock" \
+    CLAUDE_PROJECTS="$HOME/.claude/projects" \
+        node /opt/scripts/corgi-connector.js >> /data/corgi-connector.log 2>&1 &
+    bashio::log.info "Corgi connector started on :9130 (log: /data/corgi-connector.log)"
+}
+
 # Main execution
 main() {
     bashio::log.info "Initializing Claude Terminal add-on..."
@@ -485,6 +504,7 @@ main() {
     install_persistent_packages
     generate_ha_context
     setup_ha_mcp
+    start_corgi_connector
     start_web_terminal
 }
 

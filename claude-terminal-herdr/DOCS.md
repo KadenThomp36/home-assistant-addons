@@ -28,6 +28,16 @@ Your OAuth credentials are stored in the `/config/claude-config` directory and w
 | `enable_ha_mcp` | `true` | Enable Home Assistant MCP server integration |
 | `persistent_apk_packages` | `[]` | APK packages to install on every startup |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup |
+| `corgi_connector_token` | `""` | Enable the Corgi remote-management connector on port 9130 with this bearer token (empty = disabled) |
+
+### Corgi connector (remote management)
+
+Setting `corgi_connector_token` starts a small bridge daemon on port **9130** that
+lets a [Corgi](https://github.com/KadenThomp36) hub manage this herdr remotely:
+full-text search over Claude transcripts, live agent status/screens, and
+workspace/pane management — all over the herdr socket API. Everything requires the
+bearer token; leave the option empty to keep the connector off. In the Corgi UI add
+a server with URL `http://<ha-host>:9130` and the same token.
 
 ## Usage
 
