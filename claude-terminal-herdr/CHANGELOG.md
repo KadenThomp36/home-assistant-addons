@@ -8,6 +8,10 @@
   - New option **`corgi_connector_token`** (default empty = connector disabled) and port mapping **9130/tcp** (host default 9130)
   - Started from `run.sh` only when a token is configured; logs to `/data/corgi-connector.log`
 
+### ⬆️ Dependency Updates
+- **Bumped vendored herdr binary from 0.7.3 to [0.7.4](https://github.com/ogulcancelik/herdr/releases/tag/v0.7.4)** (stable): session-modal popup panes, `ui.copy_on_select`, configurable sidebar row layouts + metadata tokens, copy-mode literal search & word motions, Maki agent support, packed sidebar layout by default, and a batch of agent-detection/live-handoff/plugin fixes
+  - Bundled `config.toml` unaffected — 0.7.4 only adds options; nothing we pin was removed or renamed
+
 ## 2.2.2-herdr8
 
 ### ✨ New Features
