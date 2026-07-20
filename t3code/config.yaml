@@ -1,7 +1,7 @@
 ---
 name: "T3 Code"
 description: "T3 Code's chat GUI (drives the Claude Code CLI) embedded in Home Assistant via ingress"
-version: "0.1.0"
+version: "0.2.0"
 slug: "t3code"
 init: false
 
@@ -28,11 +28,18 @@ panel_admin: true
 options:
   claude_effort: "high"
   claude_model: "claude-opus-4-8"
+  tailscale_authkey: ""
+  tailscale_hostname: "t3code-ha"
   persistent_apk_packages: []
   persistent_npm_packages: []
 schema:
   claude_effort: "list(high|medium|low)?"
   claude_model: str?
+  # Optional tailnet-only access: set an auth key to have the add-on join the
+  # tailnet and `tailscale serve` the T3 server (with T3's native pairing) at
+  # https://<tailscale_hostname>.<your-tailnet>.ts.net. Leave empty for ingress-only.
+  tailscale_authkey: str?
+  tailscale_hostname: str?
   persistent_apk_packages:
     - str
   persistent_npm_packages:

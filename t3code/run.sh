@@ -119,9 +119,46 @@ start_proxy() {
     PROXY_PID=$!
 }
 
+# Optional tailnet-only access. When tailscale_authkey is set, join the tailnet in
+# userspace-networking mode (no TUN/privileges) and `tailscale serve` the T3 server
+# over HTTPS. The tailnet client uses T3's native pairing; the ingress path is
+# unaffected (both proxy to the same loopback t3 serve).
+start_tailscale() {
+    local authkey hostname
+    authkey="$(bashio::config 'tailscale_authkey' '')"
+    hostname="$(bashio::config 'tailscale_hostname' 't3code-ha')"
+    if [ -z "${authkey}" ] || [ "${authkey}" = "null" ]; then
+        bashio::log.info "Tailscale disabled (set tailscale_authkey to enable tailnet access)."
+        return
+    fi
+    mkdir -p /data/tailscale /var/run/tailscale
+    bashio::log.info "Starting tailscaled (userspace networking)..."
+    tailscaled \
+        --tun=userspace-networking \
+        --state=/data/tailscale/tailscaled.state \
+        --socket=/var/run/tailscale/tailscaled.sock \
+        >> /data/tailscale/tailscaled.log 2>&1 &
+    TAILSCALED_PID=$!
+    # Wait for the daemon socket.
+    for _ in $(seq 1 30); do
+        [ -S /var/run/tailscale/tailscaled.sock ] && break
+        sleep 0.5
+    done
+    bashio::log.info "Joining tailnet as '${hostname}'..."
+    if tailscale up --authkey="${authkey}" --hostname="${hostname}" --accept-dns=false; then
+        tailscale serve --bg --https=443 "http://127.0.0.1:${UPSTREAM_PORT}" || \
+            bashio::log.warning "tailscale serve failed; tailnet access unavailable."
+        local ts_url
+        ts_url="$(tailscale status --json 2>/dev/null | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
+        [ -n "${ts_url}" ] && bashio::log.info "Tailnet access: https://${ts_url}/ (pair a client with a T3 pairing link)."
+    else
+        bashio::log.warning "tailscale up failed; continuing ingress-only."
+    fi
+}
+
 cleanup() {
     bashio::log.info "Shutting down..."
-    kill "${T3_PID}" "${PROXY_PID}" 2>/dev/null || true
+    kill "${T3_PID}" "${PROXY_PID}" "${TAILSCALED_PID:-}" 2>/dev/null || true
 }
 
 main() {
@@ -132,6 +169,7 @@ main() {
     start_t3
     wait_for_t3
     mint_bearer
+    start_tailscale
     start_proxy
     trap cleanup EXIT INT TERM
 

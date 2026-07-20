@@ -51,6 +51,12 @@ RUN apk add --no-cache --virtual .build-deps build-base python3 \
 # Sanity: both CLIs must be runnable in the image (hard-fails the build otherwise).
 RUN t3 --version && claude --version
 
+# Tailscale (userspace-networking mode — no TUN/NET_ADMIN needed) for the optional
+# tailnet-only access path: `tailscale serve` exposes the T3 server on the tailnet
+# with T3's native pairing, coexisting with HA ingress. Late layer to preserve the
+# npm build cache. Gated on the tailscale_authkey option in run.sh.
+RUN apk add --no-cache tailscale
+
 # Default T3 settings shipped with the add-on: forces the Claude provider and a
 # Claude text-generation model so threads + auto-titles never hit `spawn codex ENOENT`
 # or the red "Runtime error". Seeded into the persistent T3CODE_HOME on first run.

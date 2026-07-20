@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+Optional **tailnet-only access**. Set `tailscale_authkey` (and optionally
+`tailscale_hostname`, default `t3code-ha`) and the add-on joins your tailnet in
+userspace-networking mode (no TUN/privileges) and `tailscale serve`s the T3 server
+over HTTPS at `https://<hostname>.<your-tailnet>.ts.net`. Tailnet clients connect
+with T3's native pairing (`t3 auth pairing create`), so you can add the add-on as a
+Remote-link **environment** in the T3 desktop/mobile client. The HA ingress path is
+unchanged — both proxy to the same loopback `t3 serve`. Leave the key empty to stay
+ingress-only.
+
 ## 0.1.0
 
 Initial release of the **T3 Code** add-on — T3 Code's chat GUI (the harness that
