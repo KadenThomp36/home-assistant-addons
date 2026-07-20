@@ -23,10 +23,8 @@ panel_admin: true
 # Port configuration
 ports:
   7681/tcp: null
-  9130/tcp: 9130
 ports_description:
   7681/tcp: "Web terminal (not required for ingress)"
-  9130/tcp: "Corgi connector (herdr remote management; only starts when corgi_connector_token is set)"
 
 # Add-on configuration options
 options:
@@ -35,7 +33,6 @@ options:
   enable_ha_mcp: true
   persistent_apk_packages: []
   persistent_pip_packages: []
-  corgi_connector_token: ""
 schema:
   auto_launch_claude: bool?
   ha_smart_context: bool?
@@ -44,7 +41,6 @@ schema:
     - str
   persistent_pip_packages:
     - str
-  corgi_connector_token: str?
 
 # Volume mappings for file access
 map:
