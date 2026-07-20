@@ -2,12 +2,14 @@ ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 # Runtime packages. nodejs on Alpine 3.21 is 22.23+, which satisfies t3's
-# engine floor (^22.16 || >=24.10). git is needed because T3 drives real repos.
+# engine floor (^22.16 || >=24.10). git is needed because T3 drives real repos;
+# libstdc++ is the runtime lib for node-pty's compiled native addon.
 RUN apk add --no-cache \
     bash \
     curl \
     git \
     jq \
+    libstdc++ \
     nodejs \
     npm \
     openssh-client \
@@ -17,6 +19,14 @@ RUN apk add --no-cache \
 # removed to keep the image lean — the compiled .node artifact stays behind.
 RUN apk add --no-cache --virtual .build-deps build-base python3 \
     && npm install -g --unsafe-perm t3@latest @anthropic-ai/claude-code@latest \
+    # T3's ffi-rs native dep ships per-platform bindings as OPTIONAL deps; npm on
+    # musl does not reliably install the musl one, so add the arch-matched binding
+    # explicitly into t3's own node_modules (where ffi-rs resolves it first).
+    && T3_NM="$(npm root -g)/t3" \
+    && FFI_VER="$(node -e "console.log(require('${T3_NM}/node_modules/ffi-rs/package.json').version)")" \
+    && NODE_ARCH="$(node -e "console.log(process.arch)")" \
+    && ( cd "${T3_NM}" && npm install --no-save --no-package-lock \
+         "@yuuang/ffi-rs-linux-${NODE_ARCH}-musl@${FFI_VER}" ) \
     && npm cache clean --force \
     && apk del .build-deps
 
