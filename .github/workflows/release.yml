@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "t3code-v*"
 
 permissions:
   contents: write
@@ -15,18 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Determine version and add-on directory from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Determine add-on directory
-        id: addon
         run: |
-          version="${{ steps.version.outputs.version }}"
-          case "$version" in
-            *-herdr*) echo "dir=claude-terminal-herdr" >> "$GITHUB_OUTPUT" ;;
-            *)        echo "dir=claude-terminal" >> "$GITHUB_OUTPUT" ;;
+          ref="${GITHUB_REF_NAME}"
+          case "$ref" in
+            t3code-v*)
+              version="${ref#t3code-v}"
+              dir="t3code"
+              ;;
+            v*-herdr*)
+              version="${ref#v}"
+              dir="claude-terminal-herdr"
+              ;;
+            v*)
+              version="${ref#v}"
+              dir="claude-terminal"
+              ;;
+            *)
+              echo "::error::Unrecognized tag format: $ref"
+              exit 1
+              ;;
           esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
+      - name: Expose add-on directory
+        id: addon
+        run: echo "dir=${{ steps.version.outputs.dir }}" >> "$GITHUB_OUTPUT"
 
       - name: Validate tag matches config.yaml
         run: |
