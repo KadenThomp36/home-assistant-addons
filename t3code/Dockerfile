@@ -61,10 +61,10 @@ COPY rootfs/default-settings.json /opt/t3code/default-settings.json
 # rewrites index.html asset paths for the ingress sub-path.
 COPY rootfs/proxy.mjs /opt/t3code/proxy.mjs
 
-# Startup script
+# Startup script. No custom ENTRYPOINT: the HA base image's s6-overlay `/init`
+# must stay the entrypoint (config.yaml has init:false) so that `with-contenv`
+# and bashio in run.sh get the s6 container environment. s6 also reaps children.
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
-# tini reaps the node children (t3 serve + proxy) cleanly.
-ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/run.sh"]
