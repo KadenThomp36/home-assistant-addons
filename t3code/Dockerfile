@@ -15,18 +15,36 @@ RUN apk add --no-cache \
     openssh-client \
     tini
 
+# T3 Code version. Pinned (rather than @latest) for reproducible builds: T3's
+# dependency tree is huge (Clerk/Coinbase SDKs) and @latest resolution has proven
+# non-deterministic on Alpine npm. Bump this one line to update T3.
+ARG T3_VERSION=0.0.28
+
+# Reduce npm flakiness on the large tree.
+ENV npm_config_audit=false npm_config_fund=false npm_config_fetch_retries=5
+
 # Build toolchain for node-pty's native addon (compiled against musl), then
 # removed to keep the image lean — the compiled .node artifact stays behind.
+# Installs are split so a failure points at the right package.
 RUN apk add --no-cache --virtual .build-deps build-base python3 \
-    && npm install -g --unsafe-perm t3@latest @anthropic-ai/claude-code@latest \
+    && npm install -g --unsafe-perm "t3@${T3_VERSION}" \
+    && npm install -g --unsafe-perm @anthropic-ai/claude-code@latest \
     # T3's ffi-rs native dep ships per-platform bindings as OPTIONAL deps; npm on
-    # musl does not reliably install the musl one, so add the arch-matched binding
-    # explicitly into t3's own node_modules (where ffi-rs resolves it first).
+    # musl does not install the musl one. We can't run `npm install` inside t3's
+    # dir to add it — t3's package.json has `overrides` with nested-key syntax
+    # (e.g. "@clerk/clerk-js>@base-org/account") that Alpine's npm 10.x rejects
+    # with EINVALIDPACKAGENAME. So fetch the binding as a plain tarball via
+    # `npm pack` (no overrides processing) and drop it where ffi-rs resolves it.
     && T3_NM="$(npm root -g)/t3" \
     && FFI_VER="$(node -e "console.log(require('${T3_NM}/node_modules/ffi-rs/package.json').version)")" \
     && NODE_ARCH="$(node -e "console.log(process.arch)")" \
-    && ( cd "${T3_NM}" && npm install --no-save --no-package-lock \
-         "@yuuang/ffi-rs-linux-${NODE_ARCH}-musl@${FFI_VER}" ) \
+    && FFI_PKG="ffi-rs-linux-${NODE_ARCH}-musl" \
+    && mkdir -p "${T3_NM}/node_modules/@yuuang" /tmp/ffi \
+    && ( cd /tmp/ffi && npm pack "@yuuang/${FFI_PKG}@${FFI_VER}" \
+         && tar -xzf yuuang-${FFI_PKG}-*.tgz \
+         && rm -rf "${T3_NM}/node_modules/@yuuang/${FFI_PKG}" \
+         && mv package "${T3_NM}/node_modules/@yuuang/${FFI_PKG}" ) \
+    && rm -rf /tmp/ffi \
     && npm cache clean --force \
     && apk del .build-deps
 
