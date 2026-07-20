@@ -1,7 +1,7 @@
 ---
 name: "T3 Code"
 description: "T3 Code's chat GUI (drives the Claude Code CLI) embedded in Home Assistant via ingress"
-version: "0.2.0"
+version: "0.3.0"
 slug: "t3code"
 init: false
 

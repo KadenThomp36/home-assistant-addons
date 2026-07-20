@@ -67,6 +67,11 @@ COPY rootfs/default-settings.json /opt/t3code/default-settings.json
 # rewrites index.html asset paths for the ingress sub-path.
 COPY rootfs/proxy.mjs /opt/t3code/proxy.mjs
 
+# Bundled Claude skills (e.g. spawn-project-t3), installed to ~/.claude/skills on
+# every start by run.sh. Late layer to preserve the npm build cache.
+COPY skills/ /opt/t3code/skills/
+RUN find /opt/t3code/skills -name '*.sh' -exec chmod +x {} \;
+
 # Startup script. No custom ENTRYPOINT: the HA base image's s6-overlay `/init`
 # must stay the entrypoint (config.yaml has init:false) so that `with-contenv`
 # and bashio in run.sh get the s6 container environment. s6 also reaps children.

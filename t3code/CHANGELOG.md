@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+Bundles the **`spawn-project-t3`** Claude skill (add-on edition), installed to
+`~/.claude/skills` on every start. It lets the orchestrator (the `/config` project's
+Claude thread) split off a new project — write a context dump under
+`/config/herdr-context/<slug>.md` and register it with this add-on's T3 server
+(`t3 project add --base-dir /data/t3code`) so it appears live in the T3 GUI. The
+in-add-on analogue of the host `spawn-project-t3`.
+
 ## 0.2.0
 
 Optional **tailnet-only access**. Set `tailscale_authkey` (and optionally

@@ -50,6 +50,17 @@ seed_settings() {
         /opt/t3code/default-settings.json > "${target}"
 }
 
+# Install bundled Claude skills (e.g. spawn-project-t3) into ~/.claude/skills.
+# Shipped with the add-on; refreshed on every start (user's own skills untouched).
+install_skills() {
+    local src="/opt/t3code/skills"
+    [ -d "${src}" ] || return
+    mkdir -p "${HOME}/.claude/skills"
+    cp -a "${src}/." "${HOME}/.claude/skills/"
+    find "${HOME}/.claude/skills" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
+    bashio::log.info "Bundled Claude skills installed to ~/.claude/skills."
+}
+
 install_persistent_packages() {
     local apk_pkgs npm_pkgs
     apk_pkgs="$(bashio::config 'persistent_apk_packages | join(" ")' 2>/dev/null || echo '')"
@@ -165,6 +176,7 @@ main() {
     bashio::log.info "Initializing T3 Code add-on..."
     init_dirs
     seed_settings
+    install_skills
     install_persistent_packages
     start_t3
     wait_for_t3
