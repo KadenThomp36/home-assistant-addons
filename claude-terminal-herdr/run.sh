@@ -114,7 +114,7 @@ migrate_legacy_auth_files() {
 # Install required tools
 install_tools() {
     bashio::log.info "Installing additional tools..."
-    if ! apk add --no-cache ttyd jq curl tmux coreutils; then
+    if ! apk add --no-cache ttyd jq curl tmux coreutils socat; then
         bashio::log.error "Failed to install required tools"
         exit 1
     fi
@@ -363,6 +363,32 @@ PY
 }
 
 
+# Expose the herdr Unix socket over TCP for the Collie PWA bridge on chungtu.
+# The Proxmox host runs the single Collie instance for the whole homelab; a
+# socat there maps this listener back to ~/.config/herdr/sessions/ha/herdr.sock
+# so this add-on's agents appear as the "ha" session in the same PWA. Only
+# connections sourced from chungtu (192.168.10.10) are accepted — the herdr
+# socket API is unauthenticated, so the range filter is load-bearing. Disable
+# via the herdr_socket_bridge option.
+start_herdr_socket_bridge() {
+    local enabled
+    enabled=$(bashio::config 'herdr_socket_bridge' 'true')
+    if [ "$enabled" != "true" ]; then
+        bashio::log.info "herdr socket bridge disabled in configuration"
+        return
+    fi
+    local sock="/data/.config/herdr/herdr.sock"
+    local allow="192.168.10.10/32"
+    bashio::log.info "Starting herdr socket bridge :8788 (allow ${allow}) -> ${sock}"
+    # UNIX-CONNECT is attempted per client connection, so the listener may start
+    # before herdr has created its socket; clients simply fail until it exists.
+    ( while true; do
+          socat "TCP-LISTEN:8788,fork,reuseaddr,range=${allow}" "UNIX-CONNECT:${sock}"
+          bashio::log.warning "herdr socket bridge exited; restarting in 5s"
+          sleep 5
+      done ) &
+}
+
 # Start main web terminal
 start_web_terminal() {
     local port=7681
@@ -485,6 +511,7 @@ main() {
     install_persistent_packages
     generate_ha_context
     setup_ha_mcp
+    start_herdr_socket_bridge
     start_web_terminal
 }
 

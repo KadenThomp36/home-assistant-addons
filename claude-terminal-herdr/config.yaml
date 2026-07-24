@@ -1,7 +1,7 @@
 ---
 name: "Claude Terminal (herdr)"
 description: "Claude Code CLI in a herdr workspace multiplexer (agent-aware panes/tabs/workspaces), persistent auth"
-version: "2.2.2-herdr9"
+version: "2.2.2-herdr10"
 slug: "claude_terminal_herdr"
 init: false
 
@@ -23,18 +23,22 @@ panel_admin: true
 # Port configuration
 ports:
   7681/tcp: null
+  8788/tcp: 8788
 ports_description:
   7681/tcp: "Web terminal (not required for ingress)"
+  8788/tcp: "herdr socket bridge for the Collie PWA on chungtu (source-filtered to 192.168.10.10)"
 
 # Add-on configuration options
 options:
   auto_launch_claude: true
+  herdr_socket_bridge: true
   ha_smart_context: true
   enable_ha_mcp: true
   persistent_apk_packages: []
   persistent_pip_packages: []
 schema:
   auto_launch_claude: bool?
+  herdr_socket_bridge: bool?
   ha_smart_context: bool?
   enable_ha_mcp: bool?
   persistent_apk_packages:

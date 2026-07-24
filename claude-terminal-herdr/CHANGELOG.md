@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.2-herdr10
+
+### ✨ New Features
+- **Collie PWA unification** — expose the herdr Unix socket over TCP :8788 via socat (connections accepted from chungtu/192.168.10.10 only), so this add-on's agents appear as the "ha" session in the homelab's single Collie PWA at https://chungtu-1.tail2c61c0.ts.net. New `herdr_socket_bridge` option (default true) to disable.
+
+
 ## 2.2.2-herdr9
 
 ### ⬆️ Dependency Updates
