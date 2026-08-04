@@ -45,17 +45,20 @@ wid=$(herdr workspace list \
   | python3 -c "import json,sys; print(next(w['workspace_id'] for w in json.load(sys.stdin)['result']['workspaces'] if w['label']=='$SLUG'))") || {
     echo "ERROR: could not resolve workspace id for '$SLUG'"; exit 1; }
 
-# Launch the agent (unique name = slug; cwd = project dir so claude auto-loads
-# CLAUDE.md = the dump). Capture its pane id so we can drop the leftover root
-# shell, leaving a single pane = the agent. (The dump stays on disk / as CLAUDE.md.)
-agent_pane=$(herdr agent start "$SLUG" --workspace "$wid" --cwd "$PROJ_DIR" --no-focus -- claude \
-  | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["agent"]["pane_id"])') || {
-    echo "ERROR: failed to start agent"; exit 1; }
-
-# Remove the empty root shell pane if the agent opened in its own pane.
-if [ -n "$agent_pane" ] && [ "$agent_pane" != "$root_pane" ]; then
-  herdr pane close "$root_pane" >/dev/null 2>&1 || true
-fi
+# Launch the agent in the workspace's existing root pane (already at cwd = project
+# dir, so claude auto-loads CLAUDE.md = the dump). As of herdr 0.8.0 `agent start`
+# attaches to an existing interactive-shell pane via --kind/--pane and never creates
+# layout itself, so the agent inherits the pane's cwd and there is no leftover root
+# pane to clean up. A freshly created pane can briefly not be "an available shell"
+# yet, so retry before giving up.
+ok=""
+for _ in 1 2 3 4 5; do
+  if herdr agent start "$SLUG" --kind claude --pane "$root_pane" >/dev/null 2>&1; then
+    ok=1; break
+  fi
+  sleep 1
+done
+[ -n "$ok" ] || { echo "ERROR: failed to start agent"; exit 1; }
 
 echo "Spawned project '$SLUG':"
 echo "  workspace : $wid (label: $SLUG)"
