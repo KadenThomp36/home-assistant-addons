@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.2.2-herdr11
+
+### ⬆️ Dependency Updates
+- **Bumped vendored herdr binary from 0.7.4 to [0.8.0](https://github.com/herdrdev/herdr/releases/tag/v0.8.0)** (stable): `herdr --skill`, `ui.pane_scrollbars`, `ui.tab_bar_position = "bottom"`, keybind-help live filtering, Grok/Antigravity session restore, workspace block reordering, plus a large batch of input/rendering/agent-detection fixes
+  - herdr relicensed from AGPL-3.0-or-later to **Apache-2.0**, and its GitHub org moved to `herdrdev/herdr` (old `ogulcancelik/herdr` links in earlier entries still redirect)
+  - Bundled `config.toml` verified clean against 0.8.0 with `herdr config check` — nothing we pin was removed or renamed
+- **Claude Code CLI**: no Dockerfile pin to bump — the image installs `@anthropic-ai/claude-code@latest` at build time, so this rebuild picks up the current npm `latest` (2.1.221 at release time) automatically
+
+### 🐛 Bug Fixes
+- **Fixed agent auto-launch and `spawn-project` against the herdr 0.8.0 API** (would otherwise have shipped broken). herdr 0.7.5 reworked `agent start`: it no longer creates layout, and instead attaches an agent to an **existing** interactive shell pane via `--kind`/`--pane`, inheriting that pane's cwd. The old `--cwd`/`--workspace`/`--no-focus` flags were removed and now fail with `unknown option`.
+  - `scripts/herdr-launch.sh`: the parent Claude agent is now started into the session's first agent-free pane (`agent start parent --kind claude --pane <id>`) instead of `agent start parent --cwd /config -- claude`. Without this the add-on would still open herdr but **never auto-launch Claude**.
+  - `skills/spawn-project/spawn.sh`: now starts the agent directly in the workspace's root pane returned by `workspace create --cwd`, with a short retry while the fresh pane settles into an interactive prompt. This also removes the old create-pane-then-close-leftover-root-pane dance, so the "one agent pane per workspace" result is unchanged.
+
 ## 2.2.2-herdr10
 
 ### ✨ New Features
