@@ -1,0 +1,105 @@
+name: Build & Smoke Test (t3code)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "t3code/**"
+      - ".github/workflows/build-test-t3code.yml"
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: t3code/Dockerfile
+          failure-threshold: error
+          # HA add-ons use the BUILD_FROM arg and Alpine rolling packages.
+          ignore: DL3006,DL3018
+
+  build-amd64:
+    name: Build & smoke test (amd64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container
+        uses: docker/build-push-action@v6
+        with:
+          context: ./t3code
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: test/t3code:amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21
+
+      - name: Smoke test — image is runnable
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            test/t3code:amd64 -c "echo 'Image runs OK'"
+
+      - name: Smoke test — key binaries + run.sh present
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            test/t3code:amd64 -c '
+              set -e
+              for bin in node npm t3 claude git jq curl; do
+                which "$bin" >/dev/null || { echo "FAIL: $bin not found"; exit 1; }
+                echo "OK: $bin"
+              done
+              [ -x /run.sh ] || { echo "FAIL: /run.sh not executable"; exit 1; }
+              [ -f /opt/t3code/proxy.mjs ] || { echo "FAIL: proxy.mjs missing"; exit 1; }
+              [ -f /opt/t3code/default-settings.json ] || { echo "FAIL: default-settings.json missing"; exit 1; }
+              echo "OK: files present"
+            '
+
+      - name: Smoke test — versions report
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            test/t3code:amd64 -c 't3 --version && claude --version && node --check /opt/t3code/proxy.mjs'
+
+      - name: Smoke test — default settings selects Claude provider
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            test/t3code:amd64 -c '
+              jq -e ".textGenerationModelSelection.instanceId==\"claudeAgent\"
+                     and .providerInstances.claudeAgent.enabled==true" \
+                /opt/t3code/default-settings.json >/dev/null \
+              && echo "OK: default settings pin Claude" || { echo "FAIL: settings"; exit 1; }
+            '
+
+  build-aarch64:
+    name: Build (aarch64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container (aarch64 via emulation)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./t3code
+          push: false
+          load: true
+          platforms: linux/arm64
+          tags: test/t3code:aarch64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/aarch64-base:3.21
+
+      - name: Smoke test — t3 + claude run under emulation
+        run: |
+          docker run --rm --entrypoint /bin/bash \
+            test/t3code:aarch64 -c 't3 --version && claude --version'
