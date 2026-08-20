@@ -56,6 +56,8 @@ install_skills() {
     local src="/opt/t3code/skills"
     [ -d "${src}" ] || return
     mkdir -p "${HOME}/.claude/skills"
+    # Purge retired bundled skills from the persistent dir (cp never deletes).
+    rm -rf "${HOME}/.claude/skills/spawn-project-t3"
     cp -a "${src}/." "${HOME}/.claude/skills/"
     find "${HOME}/.claude/skills" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
     bashio::log.info "Bundled Claude skills installed to ~/.claude/skills."
