@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1
+
+**Fix: HA sidebar showed "Primary environment request failed during fetch-session-state
+(HTTP 404)".** T3 ≥0.0.33's SPA resolves its API/WS base from `window.location.origin`
+only (`resolvePrimaryEnvironmentHttpUrl` overwrites the URL pathname), so under HA
+ingress every runtime call dropped the `/api/hassio_ingress/<token>` sub-path and hit
+HA core instead of the add-on. The 0.0.28-era SPA followed `location.pathname`; that
+behavior is gone upstream and the `VITE_HTTP_URL` override is build-time-only. The
+ingress proxy now injects a shim into `index.html` that patches
+`fetch`/`WebSocket`/`EventSource` to re-prefix same-host requests with the ingress
+path. Tailnet/pairing access is unaffected (served at origin root).
+
 ## 0.4.0
 
 **Add-on revived** (was decommissioned 2026-07-21) as the in-HA replacement for the
