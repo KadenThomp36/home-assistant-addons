@@ -14,10 +14,14 @@
 //
 //   2. INGRESS BASE PATH: HA serves the add-on under /api/hassio_ingress/<token>/
 //      and passes that prefix in the `X-Ingress-Path` header (it strips the prefix
-//      before forwarding, so upstream paths are already root-relative). T3's SPA
-//      derives its own API/WS base from location.pathname, so its runtime calls
-//      follow the prefix automatically — we only need to rewrite the *static*
-//      root-absolute asset refs in index.html (`src="/assets/..."` etc).
+//      before forwarding, so upstream paths are already root-relative). We rewrite
+//      the *static* root-absolute asset refs in index.html (`src="/assets/..."`),
+//      and — because T3 ≥0.0.33's SPA resolves its API/WS base from
+//      window.location.origin ONLY (resolvePrimaryEnvironmentHttpUrl overwrites
+//      the pathname, so the ingress sub-path is discarded and every call lands on
+//      HA core → 404) — we also inject a shim into index.html that patches
+//      fetch/WebSocket/EventSource to re-prefix same-host requests with the
+//      ingress path.
 // -------------------------------------------------------------------------
 
 import http from "node:http";
@@ -87,6 +91,53 @@ function cookieHeader(existing) {
   return existing ? `${existing}; ${inject}` : inject;
 }
 
+// Injected into index.html <head>. Re-prefixes same-host fetch/WebSocket/
+// EventSource requests with the ingress path the SPA discarded (see header
+// comment). Runs before any app code; no-op outside an ingress context.
+const INGRESS_SHIM = `<script>(() => {
+  const m = location.pathname.match(/^\\/api\\/hassio_ingress\\/[^/]+/);
+  if (!m) return;
+  const prefix = m[0];
+  const rewrite = (raw) => {
+    try {
+      const url = new URL(raw, location.href);
+      if (
+        /^(https?|wss?):$/.test(url.protocol) &&
+        url.host === location.host &&
+        url.pathname !== prefix &&
+        !url.pathname.startsWith(prefix + "/")
+      ) {
+        url.pathname = prefix + url.pathname;
+        return url.toString();
+      }
+    } catch {}
+    return raw;
+  };
+  const origFetch = window.fetch.bind(window);
+  window.fetch = (input, init) =>
+    input instanceof Request
+      ? origFetch(new Request(rewrite(input.url), input), init)
+      : origFetch(rewrite(String(input)), init);
+  const OrigWS = window.WebSocket;
+  const PatchedWS = function (url, protocols) {
+    return protocols === undefined
+      ? new OrigWS(rewrite(String(url)))
+      : new OrigWS(rewrite(String(url)), protocols);
+  };
+  PatchedWS.prototype = OrigWS.prototype;
+  Object.setPrototypeOf(PatchedWS, OrigWS);
+  window.WebSocket = PatchedWS;
+  if (window.EventSource) {
+    const OrigES = window.EventSource;
+    const PatchedES = function (url, cfg) {
+      return new OrigES(rewrite(String(url)), cfg);
+    };
+    PatchedES.prototype = OrigES.prototype;
+    Object.setPrototypeOf(PatchedES, OrigES);
+    window.EventSource = PatchedES;
+  }
+})();</script>`;
+
 // Defensive: HA already strips the ingress prefix, but if a request still carries
 // it (direct access, older HA), strip it so upstream sees a root-relative path.
 function upstreamPath(url, prefix) {
@@ -130,7 +181,8 @@ const server = http.createServer((creq, cres) => {
         body = body
           .replaceAll('src="/', `src="${prefix}/`)
           .replaceAll('href="/', `href="${prefix}/`)
-          .replaceAll('"/assets/', `"${prefix}/assets/`);
+          .replaceAll('"/assets/', `"${prefix}/assets/`)
+          .replace(/<head>/i, `<head>${INGRESS_SHIM}`);
         const outHeaders = { ...pres.headers };
         delete outHeaders["content-length"];
         cres.writeHead(pres.statusCode || 200, outHeaders);
