@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.2
+
+**Bundles the `spawn-t3` skill (add-on edition), replacing `spawn-project-t3`.**
+Port of the host `spawn-t3` skill: the orchestrator thread (the `/config` project)
+writes a context dump to `/config/herdr-context/<slug>.md`, and the script symlinks it
+as the project-dir CLAUDE.md, mints a short-lived bearer (`t3 auth session issue`),
+then drives `POST /api/orchestration/dispatch` on the loopback `t3 serve` (:3774) to
+find-or-create the project (dedupe by workspace root) and dispatch `thread.create` +
+`thread.turn.start` — a context-loaded claude-fable-5 thread starts working
+immediately and the script prints its tailnet URL. (Two dispatches on purpose: the
+HTTP path rejects `bootstrap.createThread` on `thread.turn.start`.) The old
+`spawn-project-t3` (register-only, no thread) is removed, and `run.sh` now purges it
+from the persistent `~/.claude/skills` on start. Verified end-to-end in the running
+add-on with a throwaway spawn before shipping.
+
 ## 0.4.1
 
 **Fix: HA sidebar showed "Primary environment request failed during fetch-session-state
