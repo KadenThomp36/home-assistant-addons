@@ -23,6 +23,7 @@ jobs:
   build-amd64:
     name: Build & smoke test (amd64)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -63,7 +64,7 @@ jobs:
       - name: Smoke test — versions report
         run: |
           docker run --rm --entrypoint /bin/bash \
-            test/t3code:amd64 -c 't3 --version && claude --version && node -e "require(\"/opt/t3code/proxy.mjs\")" 2>/dev/null || node --check /opt/t3code/proxy.mjs'
+            test/t3code:amd64 -c 't3 --version && claude --version && node --check /opt/t3code/proxy.mjs'
 
       - name: Smoke test — default settings selects Claude provider
         run: |
