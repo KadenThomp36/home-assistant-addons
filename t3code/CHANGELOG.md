@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3
+
+**New option `claude_oauth_token`** — a long-lived Claude Code token from
+`claude setup-token`, exported as `CLAUDE_CODE_OAUTH_TOKEN` before `t3 serve` starts so
+every `claude` subprocess inherits it. Motivation: the Claude login copied from the
+herdr add-on's volume got orphaned ("OAuth session expired and could not be refreshed")
+because browser-login credentials rotate their refresh token — two installs sharing a
+copied `.credentials.json` invalidate each other. The setup-token flow does no rotation,
+so it's immune. DOCS now cover both auth paths and the recovery procedure.
+
 ## 0.4.2
 
 **Bundles the `spawn-t3` skill (add-on edition), replacing `spawn-project-t3`.**
