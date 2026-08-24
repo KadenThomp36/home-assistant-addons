@@ -16,6 +16,16 @@ export XDG_CACHE_HOME="/data/.cache"
 # runs as root inside an isolated container reached only through HA ingress.
 export IS_SANDBOX=1
 
+# Optional long-lived Claude Code auth (from `claude setup-token`). Exported before
+# t3 serve starts so every claude subprocess inherits it. Preferred over a copied
+# browser login: no refresh-token rotation, so it can't be orphaned by another
+# install sharing the same login.
+CLAUDE_TOKEN="$(bashio::config 'claude_oauth_token' '')"
+if [ -n "${CLAUDE_TOKEN}" ] && [ "${CLAUDE_TOKEN}" != "null" ]; then
+    export CLAUDE_CODE_OAUTH_TOKEN="${CLAUDE_TOKEN}"
+    bashio::log.info "Using claude_oauth_token from add-on config for Claude Code auth."
+fi
+
 UPSTREAM_PORT=3774                        # loopback t3 serve
 PROXY_PORT=3773                           # ingress_port (HA connects here)
 BEARER_FILE="${T3CODE_HOME}/.ingress-bearer"

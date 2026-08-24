@@ -20,10 +20,21 @@ thread-based chat interface.
 ## First-run setup
 
 1. **Install & start** the add-on, then open it from the sidebar ("T3 Code").
-2. **Log in to Claude Code (one time).** T3 drives the `claude` CLI, which needs to be
-   authenticated once. Open a **terminal** inside the T3 Code UI and run `claude`, then
-   complete the login (your Claude Max / API login). The credential is saved to
-   `/data/home/.claude` and persists.
+2. **Authenticate Claude Code (one time).** T3 drives the `claude` CLI, which needs
+   auth. Two options, best first:
+   - **Recommended — long-lived token:** run `claude setup-token` on any machine where
+     you can complete the browser OAuth flow, and paste the printed token into the
+     add-on's `claude_oauth_token` option, then restart the add-on. This token does no
+     refresh rotation, so it never gets orphaned if the same Claude login is used
+     elsewhere too.
+   - **Interactive login:** from a terminal with a TTY (e.g. the SSH add-on's web
+     terminal in the HA sidebar):
+     `docker exec -it app_dcc88dd2_t3code bash`, then `export HOME=/data/home` and
+     `claude /login`; open the printed URL in a browser and paste the code back. The
+     credential is saved to `/data/home/.claude` and persists across updates.
+     ⚠️ Don't *copy* `.credentials.json` from another live install — browser-login
+     credentials rotate their refresh token, so whichever copy refreshes first
+     orphans the other ("OAuth session expired and could not be refreshed").
 3. **Start a thread.** Pick a project directory and start a thread. The add-on ships a
    default configuration that already selects a **Claude** model, so you won't hit
    `spawn codex ENOENT` or the red "Runtime error" that occurs when T3 defaults to the
