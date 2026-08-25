@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.4
+
+**Fix: startup could wedge silently after an update.** `wait_for_t3`'s health-probe
+`curl` had no timeout; a request that connected while t3 was still booting (first
+start after an update runs DB migrations) could hang forever, leaving the add-on
+"started" with `t3 serve` running but the ingress proxy and tailscaled never
+launched — sidebar and tailnet both dead. The probe now uses `--max-time 2` so the
+60-iteration loop actually bounds the wait. Also adds a **Supervisor watchdog** on
+the ingress proxy (`/api/auth/session`), so HA auto-restarts the add-on if the proxy
+stops answering for any reason.
+
 ## 0.4.3
 
 **New option `claude_oauth_token`** — a long-lived Claude Code token from

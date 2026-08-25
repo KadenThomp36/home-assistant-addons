@@ -1,7 +1,7 @@
 ---
 name: "T3 Code"
 description: "T3 Code's chat GUI (drives the Claude Code CLI) embedded in Home Assistant via ingress"
-version: "0.4.3"
+version: "0.4.4"
 slug: "t3code"
 init: false
 
@@ -23,6 +23,11 @@ ingress_port: 3773
 panel_icon: mdi:robot-happy
 panel_title: "T3 Code"
 panel_admin: true
+
+# Supervisor watchdog: probes the ingress proxy over the hassio network and
+# restarts the add-on if it stops answering — catches a wedged startup (proxy
+# never launched) as well as a crashed proxy, without any manual restart.
+watchdog: "http://[HOST]:[PORT:3773]/api/auth/session"
 
 # Add-on configuration options
 options:
