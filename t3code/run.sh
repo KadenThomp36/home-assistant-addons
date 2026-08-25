@@ -101,8 +101,11 @@ start_t3() {
 
 wait_for_t3() {
     bashio::log.info "Waiting for T3 Code server to come up..."
+    # --max-time bounds each probe: a request that connects during t3's boot
+    # (e.g. mid-migration on first start after an update) can otherwise hang
+    # forever, wedging startup before the proxy/tailscale ever launch.
     for _ in $(seq 1 60); do
-        if curl -fsS -o /dev/null "http://127.0.0.1:${UPSTREAM_PORT}/api/auth/session"; then
+        if curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:${UPSTREAM_PORT}/api/auth/session"; then
             bashio::log.info "T3 Code server is up."
             return 0
         fi
