@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.5
+
+**T3 0.0.33 → 0.0.36.** Release notes for 0.0.34–0.0.36 show no changes to the CLI or
+server API surfaces the add-on depends on (`t3 serve`/`auth session` flags,
+`/api/orchestration/dispatch` schemas, `/api/auth/session` metadata); verified live
+post-update: ingress proxy cookie discovery + auth, tailnet serve, and a throwaway
+`spawn-t3` end-to-end spawn. Note 0.0.36's "replay all un-applied events during
+projection bootstrap" can make the first post-update start slower — covered by the
+v0.4.4 probe timeout + watchdog.
+
 ## 0.4.4
 
 **Fix: startup could wedge silently after an update.** `wait_for_t3`'s health-probe
