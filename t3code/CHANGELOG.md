@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.6
+
+T3 0.0.36 → 0.0.38. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running.
+
+
 ## 0.4.5
 
 **T3 0.0.33 → 0.0.36.** Release notes for 0.0.34–0.0.36 show no changes to the CLI or
