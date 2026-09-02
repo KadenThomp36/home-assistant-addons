@@ -18,7 +18,7 @@ RUN apk add --no-cache \
 # T3 Code version. Pinned (rather than @latest) for reproducible builds: T3's
 # dependency tree is huge (Clerk/Coinbase SDKs) and @latest resolution has proven
 # non-deterministic on Alpine npm. Bump this one line to update T3.
-ARG T3_VERSION=0.0.36
+ARG T3_VERSION=0.0.38
 
 # Reduce npm flakiness on the large tree.
 ENV npm_config_audit=false npm_config_fund=false npm_config_fetch_retries=5
