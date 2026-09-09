@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.7
+
+T3 0.0.38 → 0.0.40. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running: `t3 serve`
+flags, the `project.create` / `thread.create` / `thread.turn.start` dispatch
+schemas, `sessionCookieName` in `/api/auth/session`, and the SPA's
+`window.location.origin`-only base-URL resolution are all unchanged, so the
+ingress proxy and its fetch/WebSocket shim keep working as-is.
+
+Known CI caveat: the **aarch64** validation build fails on 0.0.40 with
+`Illegal instruction (core dumped)` partway through `npm install -g t3@0.0.40`
+under QEMU emulation (reproduced twice; amd64 builds and passes every smoke
+test). This add-on is only ever run on amd64 here, so the bump ships with that
+job red. Re-check it on the next bump.
+
+
 ## 0.4.6
 
 T3 0.0.36 → 0.0.38. Routine bump via the `/update-t3` skill; release notes were
