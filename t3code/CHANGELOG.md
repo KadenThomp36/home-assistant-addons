@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.5.1
+
+**Fix: `spawn-t3` pinned a model this account cannot run.** The bundled
+`skills/spawn-t3/spawn-t3.sh` hardcoded `"model":"claude-fable-5"` in
+`MODEL_SELECTION`, and `claude-fable-5` returns *"You're out of usage credits"* on
+this account — verified 2026-09-17 on both the add-on and the Proxmox host, while
+`claude-opus-5` replies normally on both. Every project spawned by the skill
+therefore died on its first turn.
+
+This is also the correct diagnosis of the 0.4.7 "verification spawn failure", which
+was recorded at the time as the add-on being out of credits / an auth problem. It
+was neither: the account is funded and the add-on's own `claude_model:
+claude-opus-5` default always worked. The bad note has been corrected in the wiki
+and the context dump.
+
+- `MODEL_SELECTION` now pins `claude-opus-5` (same options: effort high, 1M
+  context), with a comment recording why so it is not silently reverted.
+- The summary line hardcoded the model name separately and kept printing
+  `claude-fable-5` after the pin changed; it now derives the label from
+  `MODEL_SELECTION` via `jq -r .model` so it cannot drift again.
+- The host copy at `~/.claude/skills/spawn-t3/` got the identical change — these
+  two copies must stay in sync. Verified on the host with a throwaway spawn: the
+  thread's stored `model_selection` is `claude-opus-5` and the agent read its
+  CLAUDE.md and answered the canary correctly.
+
+
 ## 0.5.0
 
 **Base image migrated from Alpine to Debian (bookworm), and T3 0.0.40 → 0.0.42.**

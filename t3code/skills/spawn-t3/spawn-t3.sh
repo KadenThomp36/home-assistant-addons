@@ -14,7 +14,10 @@ T3_HOME=/data/t3code
 # inject its own full-scope bearer, masking auth failures in this script.
 T3_URL=http://127.0.0.1:3774
 TAILNET_URL=https://t3code-ha-1.tail2c61c0.ts.net
-MODEL_SELECTION='{"instanceId":"claudeAgent","model":"claude-fable-5","options":[{"id":"effort","value":"high"},{"id":"contextWindow","value":"1m"}]}'
+# claude-opus-5, NOT claude-fable-5: Fable returns "You're out of usage
+# credits" on this account (verified 2026-09-17 on both the host and the
+# add-on), which silently killed every spawned thread on its first turn.
+MODEL_SELECTION='{"instanceId":"claudeAgent","model":"claude-opus-5","options":[{"id":"effort","value":"high"},{"id":"contextWindow","value":"1m"}]}'
 
 SLUG="${1:?usage: spawn-t3.sh <slug> [-m msg] [-b base_dir]}"; shift
 MSG="" BASE="${HERDR_CONTEXT_DIR:-/config/herdr-context}"
@@ -88,6 +91,9 @@ dispatch "$(jq -nc --arg cid "$(uuid)" --arg tid "$THREAD_ID" \
 ENV_ID=$(cat "$T3_HOME/userdata/environment-id")
 echo "Spawned project '$SLUG' in T3 Code (HA add-on):"
 echo "  project : $PROJECT_ID ($([ -n "${created_project:-}" ] && echo new || echo existing))"
-echo "  thread  : $THREAD_ID  (claude-fable-5, cwd $PROJ_DIR, auto-loads CLAUDE.md -> $SLUG.md)"
+# Derive the label from MODEL_SELECTION so it can never drift from reality again
+# (it hardcoded claude-fable-5 and kept printing it after the model changed).
+MODEL_NAME="$(printf '%s' "$MODEL_SELECTION" | jq -r .model)"
+echo "  thread  : $THREAD_ID  ($MODEL_NAME, cwd $PROJ_DIR, auto-loads CLAUDE.md -> $SLUG.md)"
 echo "  dump    : $DUMP"
 echo "  url     : $TAILNET_URL/$ENV_ID/$THREAD_ID"
