@@ -1,13 +1,15 @@
 ---
 name: "T3 Code"
 description: "T3 Code's chat GUI (drives the Claude Code CLI) embedded in Home Assistant via ingress"
-version: "0.4.7"
+version: "0.5.0"
 slug: "t3code"
 init: false
 
 # Supported architectures
-# T3 Code + Claude Code are both npm/Node packages (no vendored native binary),
-# so this add-on can be multi-arch. CI (build-test-t3code.yml) validates each.
+# As of T3 0.0.42 the `t3` npm package is a shim that pulls a per-platform,
+# self-contained glibc executable (@t3code/t3-linux-<arch>); upstream publishes
+# linux-x64 and linux-arm64, which is exactly this arch list. Claude Code is
+# still plain npm/Node. CI (build-test-t3code.yml) validates each.
 arch:
   - amd64
   - aarch64
@@ -36,6 +38,7 @@ options:
   claude_oauth_token: ""
   tailscale_authkey: ""
   tailscale_hostname: "t3code-ha"
+  persistent_apt_packages: []
   persistent_apk_packages: []
   persistent_npm_packages: []
 schema:
@@ -51,6 +54,12 @@ schema:
   # https://<tailscale_hostname>.<your-tailnet>.ts.net. Leave empty for ingress-only.
   tailscale_authkey: str?
   tailscale_hostname: str?
+  # Extra OS packages installed on every start. Debian/apt names since 0.5.0.
+  persistent_apt_packages:
+    - str
+  # Deprecated pre-0.5.0 (Alpine) name. Still accepted so existing configs keep
+  # validating across the Debian migration; treated as apt names, and run.sh logs
+  # a warning when it is non-empty.
   persistent_apk_packages:
     - str
   persistent_npm_packages:

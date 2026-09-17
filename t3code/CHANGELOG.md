@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.5.0
+
+**Base image migrated from Alpine to Debian (bookworm), and T3 0.0.40 → 0.0.42.**
+
+This is not a routine bump — 0.0.42 forced it. T3 no longer ships its app through
+npm: the `t3` package is now a ~3 KB shim (down from 115 MB, zero dependencies)
+that spawns a self-contained executable delivered as the optional dependency
+`@t3code/t3-<platform>-<arch>`. That executable is dynamically linked against
+**glibc** (`interpreter /lib64/ld-linux-x86-64.so.2`; NEEDED `libc.so.6`,
+`libstdc++.so.6`, `libgcc_s.so.1`, `libatomic1`), and upstream publishes no musl
+build — so it cannot run on the Alpine base used through 0.4.7. The old Dockerfile
+would also have failed outright at build time, since its musl `ffi-rs` workaround
+reads `$(npm root -g)/t3/node_modules/ffi-rs/package.json` and the new package has
+no `node_modules` at all.
+
+- `build.yaml`: `{arch}-base:3.21` → `{arch}-base-debian:bookworm`. Verified the
+  Debian base still provides s6-overlay (`/init`), `/usr/bin/with-contenv` and
+  `/usr/lib/bashio/bashio`, which `run.sh` depends on.
+- Dockerfile: `apk` → `apt-get`; Node 22 from NodeSource (bookworm ships 18, and
+  Node is still needed for the `t3` shim, Claude Code, `proxy.mjs` and
+  `persistent_npm_packages`); Tailscale from the official Debian repo.
+- **Removed entirely:** the `ffi-rs` musl binding workaround and the
+  `build-base`/`python3` toolchain. The T3 executable bundles its own runtime
+  (node-pty included), so nothing native is compiled at image build time any more.
+  This is also the most likely cure for the emulated-aarch64 CI failure below.
+- CI (`.github/workflows/build-test-t3code.yml`) hardcoded the Alpine base in its
+  `BUILD_FROM` build-arg independently of `build.yaml`, so it had to be repointed
+  at the Debian base too; hadolint now ignores `DL3008` (pin apt versions) in
+  place of the Alpine-only `DL3018`.
+- `persistent_apk_packages` → **`persistent_apt_packages`**. The old key is still
+  accepted (and treated as apt names) so existing add-on configs keep validating
+  through the migration; `run.sh` logs a deprecation warning when it is non-empty.
+
+Unchanged and re-verified against 0.0.42 before shipping: `t3 serve` flags
+(`--host --port --base-dir --no-browser`), `t3 auth session issue/list/revoke`
+(`--json`, `--ttl`, `--label`, `.token`, `.[].sessionId`, `.[].client.label`),
+`t3 project add`, and `/api/auth/session` — so the ingress proxy, its cookie
+injection and the WebSocket shim all keep working as-is.
+
+Prior aarch64 CI caveat (0.4.7): the emulated ARM build died with
+`Illegal instruction (core dumped)` inside `npm install -g t3`. With no native
+compilation left in the build, this should now pass — watch this run to confirm.
+
+
 ## 0.4.7
 
 T3 0.0.38 → 0.0.40. Routine bump via the `/update-t3` skill; release notes were

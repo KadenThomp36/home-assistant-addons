@@ -74,13 +74,23 @@ install_skills() {
 }
 
 install_persistent_packages() {
-    local apk_pkgs npm_pkgs
-    apk_pkgs="$(bashio::config 'persistent_apk_packages | join(" ")' 2>/dev/null || echo '')"
+    local apt_pkgs legacy_pkgs npm_pkgs
+    apt_pkgs="$(bashio::config 'persistent_apt_packages | join(" ")' 2>/dev/null || echo '')"
+    # persistent_apk_packages is the pre-0.5.0 (Alpine) name. Still accepted so
+    # existing configs keep validating; the names are now apt package names.
+    legacy_pkgs="$(bashio::config 'persistent_apk_packages | join(" ")' 2>/dev/null || echo '')"
+    if [ -n "${legacy_pkgs}" ] && [ "${legacy_pkgs}" != "null" ]; then
+        bashio::log.warning "persistent_apk_packages is deprecated (this add-on is Debian-based since 0.5.0) — please rename it to persistent_apt_packages."
+        apt_pkgs="${apt_pkgs} ${legacy_pkgs}"
+    fi
     npm_pkgs="$(bashio::config 'persistent_npm_packages | join(" ")' 2>/dev/null || echo '')"
-    if [ -n "${apk_pkgs}" ] && [ "${apk_pkgs}" != "null" ]; then
-        bashio::log.info "Installing persistent apk packages: ${apk_pkgs}"
+    apt_pkgs="$(echo "${apt_pkgs}" | tr -s ' ' | sed 's/^ *//;s/ *$//')"
+    if [ -n "${apt_pkgs}" ] && [ "${apt_pkgs}" != "null" ]; then
+        bashio::log.info "Installing persistent apt packages: ${apt_pkgs}"
         # shellcheck disable=SC2086
-        apk add --no-cache ${apk_pkgs} || bashio::log.warning "Some apk packages failed."
+        (apt-get update && apt-get install -y --no-install-recommends ${apt_pkgs}) \
+            || bashio::log.warning "Some apt packages failed."
+        rm -rf /var/lib/apt/lists/*
     fi
     if [ -n "${npm_pkgs}" ] && [ "${npm_pkgs}" != "null" ]; then
         bashio::log.info "Installing persistent npm packages: ${npm_pkgs}"
