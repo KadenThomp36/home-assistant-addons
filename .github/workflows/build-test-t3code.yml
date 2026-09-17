@@ -17,8 +17,10 @@ jobs:
         with:
           dockerfile: t3code/Dockerfile
           failure-threshold: error
-          # HA add-ons use the BUILD_FROM arg and Alpine rolling packages.
-          ignore: DL3006,DL3018
+          # HA add-ons use the BUILD_FROM arg and unpinned distro packages.
+          # This add-on is Debian-based since 0.5.0, so DL3008 (pin apt
+          # versions) replaces the old Alpine DL3018 (pin apk versions).
+          ignore: DL3006,DL3008,DL3018
 
   build-amd64:
     name: Build & smoke test (amd64)
@@ -39,7 +41,7 @@ jobs:
           platforms: linux/amd64
           tags: test/t3code:amd64
           build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
 
       - name: Smoke test — image is runnable
         run: |
@@ -97,7 +99,7 @@ jobs:
           platforms: linux/arm64
           tags: test/t3code:aarch64
           build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/aarch64-base:3.21
+            BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
       - name: Smoke test — t3 + claude run under emulation
         run: |

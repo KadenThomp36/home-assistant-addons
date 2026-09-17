@@ -25,6 +25,10 @@ no `node_modules` at all.
   `build-base`/`python3` toolchain. The T3 executable bundles its own runtime
   (node-pty included), so nothing native is compiled at image build time any more.
   This is also the most likely cure for the emulated-aarch64 CI failure below.
+- CI (`.github/workflows/build-test-t3code.yml`) hardcoded the Alpine base in its
+  `BUILD_FROM` build-arg independently of `build.yaml`, so it had to be repointed
+  at the Debian base too; hadolint now ignores `DL3008` (pin apt versions) in
+  place of the Alpine-only `DL3018`.
 - `persistent_apk_packages` → **`persistent_apt_packages`**. The old key is still
   accepted (and treated as apt names) so existing add-on configs keep validating
   through the migration; `run.sh` logs a deprecation warning when it is non-empty.
