@@ -38,7 +38,7 @@ project spawned here can also be opened as a herdr workspace and vice versa.
    (auto-inherit), mints a short-lived T3 bearer token (`t3 auth session issue`),
    finds-or-creates the T3 project for that dir via `/api/orchestration/dispatch`
    (`project.create`), then dispatches `thread.create` + `thread.turn.start` so
-   the agent (claude-fable-5, full-access, effort high, 1M context) starts
+   the agent (claude-opus-5, full-access, effort high, 1M context) starts
    working immediately.
 4. **Report** the printed thread URL to the user, and stay in this thread as
    the coordinator. Do per-project work inside the new thread.
