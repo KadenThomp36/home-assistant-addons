@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.2-herdr12
+
+### 🗑️ Removed
+- **Collie socket bridge removed** — Collie has been decommissioned on chungtu, so the add-on no longer exposes the herdr socket over TCP :8788. Dropped the `8788/tcp` port mapping, the `herdr_socket_bridge` option, the `start_herdr_socket_bridge` socat listener in `run.sh`, and `socat` from the runtime apk install (it had no other user). Nothing else changes; the herdr socket stays local to the add-on.
+
 ## 2.2.2-herdr11
 
 ### ⬆️ Dependency Updates
