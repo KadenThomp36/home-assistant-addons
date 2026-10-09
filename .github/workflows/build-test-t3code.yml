@@ -80,28 +80,21 @@ jobs:
 
   build-aarch64:
     name: Build (aarch64)
-    runs-on: ubuntu-latest
+    # Native ARM runner (free for public repos). Replaces QEMU emulation, whose
+    # setup step pulls tonistiigi/binfmt from Docker Hub and was failing on the
+    # anonymous pull rate limit; plain `docker build` also avoids buildx pulling
+    # moby/buildkit from Docker Hub. The base image comes from ghcr.io.
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Build container (aarch64, native)
+        run: |
+          docker build \
+            --build-arg BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm \
+            -t test/t3code:aarch64 ./t3code
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build container (aarch64 via emulation)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./t3code
-          push: false
-          load: true
-          platforms: linux/arm64
-          tags: test/t3code:aarch64
-          build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
-
-      - name: Smoke test — t3 + claude run under emulation
+      - name: Smoke test — t3 + claude run on arm64
         run: |
           docker run --rm --entrypoint /bin/bash \
             test/t3code:aarch64 -c 't3 --version && claude --version'
