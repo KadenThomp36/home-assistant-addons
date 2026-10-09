@@ -4,8 +4,7 @@ T3 Code's chat GUI — the harness that drives the Claude Code CLI — embedded 
 Home Assistant dashboard via ingress. Start and resume Claude coding threads from the
 HA sidebar on phone or desktop.
 
-The T3 Code counterpart to the **Claude Terminal (herdr)** add-on: that one gives you a
-web *terminal* running `claude`; this one gives you T3 Code's own thread-based chat
+Instead of a web *terminal* running `claude`, you get T3 Code's own thread-based chat
 interface.
 
 - **Seamless auth** — Home Assistant ingress authenticates you; an in-container proxy
