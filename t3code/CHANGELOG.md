@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2
+
+T3 0.0.42 → 0.0.45. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running.
+
+
 ## 0.5.1
 
 **Fix: `spawn-t3` pinned a model this account cannot run.** The bundled
