@@ -2,9 +2,8 @@
 
 Run [T3 Code](https://github.com/pingdotgg/t3code) — the agent GUI that drives the
 Claude Code CLI — directly inside Home Assistant. Start and resume Claude coding
-threads from the HA sidebar on phone or desktop. This is the T3 Code sibling of the
-"Claude Terminal (herdr)" add-on: instead of a web terminal, you get T3 Code's own
-thread-based chat interface.
+threads from the HA sidebar on phone or desktop. Instead of a web terminal, you get
+T3 Code's own thread-based chat interface.
 
 ## How it works
 
