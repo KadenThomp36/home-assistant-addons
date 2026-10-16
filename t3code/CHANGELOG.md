@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.6.0
+
+T3 0.0.45 → **0.1.0 — Orchestrator V2** (upstream breaking release).
+
+- **Data:** on first start V2 copies `state.sqlite` → `statev2.sqlite` and migrates
+  the copy (one-way). Thread text, titles, projects and settings carry over; live
+  provider sessions, old checkpoints/diffs and tool activity do not. The first new
+  message in an old thread starts a fresh Claude session.
+- **Clients:** a V2 server refuses V1 clients — the iOS/Android app must be on
+  T3 Code 2.0 (the web UI ships in this image, so ingress/tailnet are fine).
+- **spawn-t3 skill rewritten:** V2 removed `POST /api/orchestration/dispatch` and
+  `GET /api/orchestration/snapshot`. Projects now use `GET /api/projects` +
+  `POST /api/projects/mutate`; `thread.create` + `message.dispatch`
+  (`start_immediately`) go over the `/ws` RPC via the new bundled `t3-rpc.mjs`.
+- Verified unchanged against 0.1.0: `t3 serve` flags, `t3 auth session` CLI/JSON
+  (only an additive `--scope` flag), `/api/auth/session` `.auth.sessionCookieName`,
+  SPA base-URL resolution (still `window.location.origin` → ingress shim still
+  needed), and the seeded `default-settings.json`.
+
 ## 0.5.2
 
 T3 0.0.42 → 0.0.45. Routine bump via the `/update-t3` skill; release notes were

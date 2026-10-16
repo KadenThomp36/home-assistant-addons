@@ -36,8 +36,10 @@ project spawned here can also be opened as a herdr workspace and vice versa.
    start on the first next step"), `-b <context_base_dir>`.
    The script: creates `<base>/<slug>/CLAUDE.md` → symlink to the dump
    (auto-inherit), mints a short-lived T3 bearer token (`t3 auth session issue`),
-   finds-or-creates the T3 project for that dir via `/api/orchestration/dispatch`
-   (`project.create`), then dispatches `thread.create` + `thread.turn.start` so
+   finds-or-creates the T3 project for that dir via `GET /api/projects` +
+   `POST /api/projects/mutate` (`project.create`), then sends `thread.create` +
+   `message.dispatch` (`dispatchMode: start_immediately`) over the WebSocket RPC
+   (`orchestration.dispatchCommand`, via the bundled `t3-rpc.mjs`) so
    the agent (claude-opus-5, full-access, effort high, 1M context) starts
    working immediately.
 4. **Report** the printed thread URL to the user, and stay in this thread as
@@ -52,12 +54,19 @@ project spawned here can also be opened as a herdr workspace and vice versa.
   threads keep running; archive them from the GUI if superseded.
 - The agent inherits context only via `<base>/<slug>/CLAUDE.md` (a symlink to the
   dump), so editing `<base>/<slug>.md` changes what *future* threads inherit.
-- The HTTP dispatch path does **not** honor `bootstrap.createThread` on
-  `thread.turn.start` (500 invariant error) — that's why the script sends
-  `thread.create` first. Don't "simplify" it back to one dispatch.
-- Command schemas came from `t3` v0.0.33 (`dist/bin.mjs.map`,
-  `ClientOrchestrationCommand`). If a `t3` upgrade breaks dispatch with 400s,
-  re-check the schemas there.
+- **T3 ≥ 0.1.0 (Orchestrator V2) removed `/api/orchestration/dispatch` and
+  `/api/orchestration/snapshot`.** Thread commands now go over the `/ws` Effect-RPC
+  socket (JSON serialization): mint a ticket with `POST /api/auth/websocket-ticket`
+  (bearer), connect to `/ws?wsTicket=…&orchestrationProtocol=2`, send
+  `{"_tag":"Request","id":"1","tag":"orchestration.dispatchCommand","payload":…,"headers":[]}`.
+  `t3-rpc.mjs` does exactly this. Projects stay plain HTTP.
+- V2 commands require `createdBy` (`"user"`) + `creationSource` (`"server"`); there is
+  no `createdAt`. `thread.turn.start` is gone — the first turn is a `message.dispatch`
+  with `dispatchMode:{type:"start_immediately"}`. Thread is still created first.
+- Schemas: `packages/contracts/src/orchestrationV2.ts` (`OrchestrationV2Command`) and
+  `project.ts` (`ProjectMutation`) in the upstream repo at the release tag (the
+  standalone binary no longer ships a usable sourcemap). If a `t3` upgrade breaks
+  spawning, re-check them there.
 - The printed URL only works from a device on the tailnet that has **paired**
   with this add-on's T3 (`t3 pair --base-dir /data/t3code --tailscale` mints a
   token/QR). From the HA sidebar, find the thread via the project list instead.
