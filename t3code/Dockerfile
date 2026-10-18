@@ -36,6 +36,36 @@ RUN apt-get update \
         tini \
     && rm -rf /var/lib/apt/lists/*
 
+# Libraries + fonts for T3's headless browser (preview tabs, html_preview/render).
+# T3 downloads chrome-headless-shell into $T3CODE_HOME/tools on first use, but the
+# Debian base lacks the shared libraries it links against, so it fails with
+# PreviewBrowserLibrariesError. This is the list `t3 browser setup` installs
+# (PreviewBrowserHost DEBIAN_PACKAGES, bookworm names) plus fonts so pages don't
+# render as tofu. Baked in rather than run at start: setup needs apt + network.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        fonts-dejavu-core \
+        fonts-liberation \
+        fonts-noto-color-emoji \
+        libasound2 \
+        libatk-bridge2.0-0 \
+        libatk1.0-0 \
+        libatspi2.0-0 \
+        libdbus-1-3 \
+        libexpat1 \
+        libgbm1 \
+        libglib2.0-0 \
+        libnss3 \
+        libx11-6 \
+        libxcb1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Node is still required — but only for the `t3` shim (#!/usr/bin/env node), the
 # Claude Code CLI, the ingress proxy (proxy.mjs) and persistent_npm_packages.
 # Debian bookworm ships Node 18; NodeSource 22.x keeps us at the version the

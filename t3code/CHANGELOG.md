@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.1
+
+**Fix: T3's browser (preview tabs, `html_preview`/`html_render`) never started.**
+
+- The Debian base lacked the shared libraries chrome-headless-shell links against
+  (`PreviewBrowserLibrariesError`). The image now installs the same set as
+  `t3 browser setup`, plus DejaVu/Liberation/Noto Color Emoji fonts.
+- Chrome refuses its sandbox as root, and the add-on runs as root. T3 0.1.0 reports
+  this as an AppArmor block (pingdotgg/t3code#18938). `run.sh` now exports
+  `T3CODE_SERVER_BROWSER_SANDBOX=0`, T3's documented switch, so the browser runs
+  with `--no-sandbox` inside the add-on container.
+
 ## 0.6.0
 
 T3 0.0.45 → **0.1.0 — Orchestrator V2** (upstream breaking release).

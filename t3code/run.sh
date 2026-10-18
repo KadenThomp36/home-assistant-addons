@@ -16,6 +16,12 @@ export XDG_CACHE_HOME="/data/.cache"
 # runs as root inside an isolated container reached only through HA ingress.
 export IS_SANDBOX=1
 
+# Chrome refuses its sandbox as UID 0 ("Running as root without --no-sandbox is not
+# supported", crbug.com/638180), and T3 0.1.0 misreports that as an AppArmor block
+# telling you to run `t3 browser setup` (pingdotgg/t3code#18938), which can't fix it.
+# T3's documented switch for hosts that can't sandbox makes it pass --no-sandbox.
+export T3CODE_SERVER_BROWSER_SANDBOX=0
+
 # Optional long-lived Claude Code auth (from `claude setup-token`). Exported before
 # t3 serve starts so every claude subprocess inherits it. Preferred over a copied
 # browser login: no refresh-token rotation, so it can't be orphaned by another
