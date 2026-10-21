@@ -66,8 +66,8 @@ RUN apt-get update \
         libxrandr2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Node is still required — but only for the `t3` shim (#!/usr/bin/env node), the
-# Claude Code CLI, the ingress proxy (proxy.mjs) and persistent_npm_packages.
+# Node is still required — but only for the Claude Code CLI, the ingress proxy
+# (proxy.mjs) and persistent_npm_packages.
 # Debian bookworm ships Node 18; NodeSource 22.x keeps us at the version the
 # Alpine base used to provide (22.23+) and satisfies Claude Code's engine floor.
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
@@ -76,27 +76,31 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 # T3 Code version. Pinned (rather than @latest) for reproducible builds.
 # Bump this one line to update T3.
-ARG T3_VERSION=0.1.0
+ARG T3_VERSION=0.1.1
 
 # Reduce npm flakiness.
 ENV npm_config_audit=false npm_config_fund=false npm_config_fetch_retries=5
 
-# The `t3` package is only the launcher shim; the actual executable lives in
-# @t3code/t3-linux-<arch>. npm does NOT pull that optional dependency on a global
-# install (verified on npm 10.9.8, with and without --include=optional — it
-# reports "added 1 package" and `t3 --version` then fails with "no T3 Code CLI
-# build is available for this platform"), so it is installed explicitly.
-#
-# --ignore-scripts is required here, not an optimisation: that package's node-pty
-# runs `node scripts/prebuild.js || node-gyp rebuild`, which looks for
-# prebuilds/linux-<arch>, does not find it, and falls back to a node-gyp build
-# needing a toolchain we deliberately no longer ship. The compiled artifact is
-# already in the tarball at node_modules/node-pty/build/Release/pty.node —
-# confirmed present for BOTH linux-x64 and linux-arm64 — so that rebuild is
-# redundant. Claude Code is installed separately, with its scripts intact.
+# Since T3 0.1.1 the `t3` npm package is a pure-JS launcher with no platform
+# dependency: on first run it downloads t3-<ver>-<platform>.tar.gz from the GitHub
+# Release into $T3CODE_HOME/runtime/versions/<ver>. Here T3CODE_HOME is /data/t3code,
+# so that would be a ~300 MB download at first boot of every version, piling up
+# old versions inside /data (and HA backups). Instead the same release archive is
+# baked into the image: fetched at build time, checked against the release's
+# SHA256SUMS (as the launcher does), unpacked self-contained (binary + client +
+# node_modules) to /usr/local/lib/t3code, and the binary symlinked onto PATH.
+# The executable resolves its assets from its real path, so the symlink is fine.
 RUN NODE_ARCH="$(node -e 'console.log(process.arch)')" \
-    && npm install -g --unsafe-perm --ignore-scripts \
-        "t3@${T3_VERSION}" "@t3code/t3-linux-${NODE_ARCH}@${T3_VERSION}" \
+    && ARCHIVE="t3-${T3_VERSION}-linux-${NODE_ARCH}.tar.gz" \
+    && RELEASE="https://github.com/pingdotgg/t3code/releases/download/v${T3_VERSION}" \
+    && cd /tmp \
+    && curl -fsSL --retry 5 -o "${ARCHIVE}" "${RELEASE}/${ARCHIVE}" \
+    && curl -fsSL --retry 5 -o SHA256SUMS "${RELEASE}/SHA256SUMS" \
+    && grep -E "^[0-9a-f]{64}  ${ARCHIVE}\$" SHA256SUMS | sha256sum -c - \
+    && mkdir -p /usr/local/lib/t3code \
+    && tar -xzf "${ARCHIVE}" -C /usr/local/lib/t3code --strip-components=1 --no-same-owner \
+    && ln -sf /usr/local/lib/t3code/t3 /usr/local/bin/t3 \
+    && rm -f "${ARCHIVE}" SHA256SUMS \
     && npm install -g --unsafe-perm @anthropic-ai/claude-code@latest \
     && npm cache clean --force
 
