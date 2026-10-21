@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0
+
+**T3 0.1.0 → 0.1.1, and a new way of installing T3 in the image.**
+
+- T3 0.1.1 changed its npm packaging. The `t3` package is now a pure-JS launcher
+  with no `@t3code/t3-linux-<arch>` dependency (that package was never published
+  at 0.1.1). On first run it downloads the release archive from GitHub into
+  `$T3CODE_HOME/runtime/versions/<ver>`. Here `T3CODE_HOME` is `/data/t3code`, so
+  each new version would mean a ~300 MB download at boot, with old versions
+  piling up in `/data` and in HA backups.
+- The Dockerfile now fetches `t3-<ver>-linux-<arch>.tar.gz` from the GitHub
+  Release at build time, checks it against the release's `SHA256SUMS`, unpacks
+  it to `/usr/local/lib/t3code`, and symlinks `/usr/local/bin/t3`. The npm `t3`
+  package is no longer installed. Bumping is still the one `ARG T3_VERSION` line.
+- Release notes were checked against the add-on's surfaces before the bump
+  (`t3 serve` flags, `t3 auth session` JSON, `/api/auth/session` cookie metadata,
+  `/api/projects[/mutate]`, the `orchestration.dispatchCommand` WS RPC). All are
+  unchanged; a sandboxed 0.1.1 ran the full spawn-t3 flow.
+
 ## 0.6.1
 
 **Fix: T3's browser (preview tabs, `html_preview`/`html_render`) never started.**
