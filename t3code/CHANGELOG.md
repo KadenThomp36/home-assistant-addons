@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+T3 0.1.1 → 0.1.3. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running.
+
+
 ## 0.7.0
 
 **T3 0.1.0 → 0.1.1, and a new way of installing T3 in the image.**
