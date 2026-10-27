@@ -76,7 +76,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 # T3 Code version. Pinned (rather than @latest) for reproducible builds.
 # Bump this one line to update T3.
-ARG T3_VERSION=0.1.1
+ARG T3_VERSION=0.1.3
 
 # Reduce npm flakiness.
 ENV npm_config_audit=false npm_config_fund=false npm_config_fetch_retries=5
