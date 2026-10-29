@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.3
+
+The bundled `spawn-t3` skill no longer pins a model. It used to hardcode
+`claude-opus-5` (effort high, 1M context), so spawned threads stayed on Opus 5
+after T3's default moved to Opus 5.5. Spawned threads now take T3 Code's own
+default model (`defaultModelSelection` in `settings.json`), and new projects no
+longer get a default model stamped on them.
+
+
 ## 0.7.2
 
 T3 0.1.3 → 0.1.5. Routine bump via the `/update-t3` skill; release notes were
