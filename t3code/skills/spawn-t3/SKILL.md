@@ -40,12 +40,16 @@ project spawned here can also be opened as a herdr workspace and vice versa.
    `POST /api/projects/mutate` (`project.create`), then sends `thread.create` +
    `message.dispatch` (`dispatchMode: start_immediately`) over the WebSocket RPC
    (`orchestration.dispatchCommand`, via the bundled `t3-rpc.mjs`) so
-   the agent (claude-opus-5, full-access, effort high, 1M context) starts
+   the agent (T3 Code's default model from Settings, full-access) starts
    working immediately.
 4. **Report** the printed thread URL to the user, and stay in this thread as
    the coordinator. Do per-project work inside the new thread.
 
 ## Gotchas (mostly handled by the script)
+- **Never pin a model in the script.** Spawned threads take T3 Code's default
+  (`defaultModelSelection` in `<T3_HOME>/userdata/settings.json`, set from T3's
+  Settings). A hardcoded `claude-opus-5` kept spawning stale Opus 5 threads after
+  T3 moved to 5.5. To change the model, change T3's default.
 - The script talks to the **loopback `t3 serve` on :3774**, not the ingress
   proxy on :3773 — the proxy injects its own full-scope bearer, which would mask
   auth failures.

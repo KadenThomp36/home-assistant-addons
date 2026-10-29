@@ -14,10 +14,6 @@ T3_HOME=/data/t3code
 # inject its own full-scope bearer, masking auth failures in this script.
 T3_URL=http://127.0.0.1:3774
 TAILNET_URL=https://t3code-ha-1.tail2c61c0.ts.net
-# claude-opus-5, NOT claude-fable-5: Fable returns "You're out of usage
-# credits" on this account (verified 2026-09-17 on both the host and the
-# add-on), which silently killed every spawned thread on its first turn.
-MODEL_SELECTION='{"instanceId":"claudeAgent","model":"claude-opus-5","options":[{"id":"effort","value":"high"},{"id":"contextWindow","value":"1m"}]}'
 
 SLUG="${1:?usage: spawn-t3.sh <slug> [-m msg] [-b base_dir]}"; shift
 MSG="" BASE="${HERDR_CONTEXT_DIR:-/config/herdr-context}"
@@ -38,6 +34,12 @@ mkdir -p "$PROJ_DIR"
 ln -sf "../$SLUG.md" "$PROJ_DIR/CLAUDE.md"
 
 curl -sf -o /dev/null "$T3_URL/" || { echo "ERROR: T3 Code server not reachable at $T3_URL (is the add-on healthy?)"; exit 1; }
+# No model is pinned here: the thread gets T3 Code's own default model (Settings ->
+# default model, persisted as defaultModelSelection in settings.json), so spawned
+# threads follow whatever T3 is set to. thread.create requires a modelSelection, so
+# it is read from there rather than omitted.
+MODEL_SELECTION=$(jq -ce '.defaultModelSelection // empty' "$T3_HOME/userdata/settings.json" 2>/dev/null) \
+  || { echo "ERROR: T3 Code has no default model set — pick one in T3 Code Settings"; exit 1; }
 
 TOK=$(t3 auth session issue --base-dir "$T3_HOME" --ttl 5m --label "spawn-t3:$SLUG" --token-only) \
   || { echo "ERROR: could not mint a T3 bearer token"; exit 1; }
@@ -59,9 +61,9 @@ if [ -z "$PROJECT_ID" ]; then
   PROJECT_ID=$(uuid)
   curl -sf "${auth[@]}" -X POST "$T3_URL/api/projects/mutate" \
       -d "$(jq -nc --arg cid "$(uuid)" --arg pid "$PROJECT_ID" --arg slug "$SLUG" \
-        --arg root "$PROJ_DIR" --argjson ms "$MODEL_SELECTION" \
+        --arg root "$PROJ_DIR" \
         '{type:"project.create", commandId:$cid, projectId:$pid, title:$slug,
-          workspaceRoot:$root, defaultModelSelection:$ms}')" >/dev/null \
+          workspaceRoot:$root}')" >/dev/null \
     || { echo "ERROR: failed to create T3 project '$SLUG'"; exit 1; }
   created_project=1
 fi
