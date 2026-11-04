@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.4
+
+T3 0.1.5 → 0.1.7. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running.
+
+
 ## 0.7.3
 
 The bundled `spawn-t3` skill no longer pins a model. It used to hardcode
