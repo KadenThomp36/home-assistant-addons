@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.6
+
+Fixes the ingress web UI (HA sidebar / "Open Web UI"), which showed "T3 Code
+failed to start" and, once past that, "Still connecting". Three proxy bugs:
+
+- **Vite preloads hit HA's root.** The SPA's preload helper builds dependency
+  URLs as `/assets/...`, so they 404'd on HA core; the failed CSS preload aborted
+  boot. The injected shim now also re-prefixes `<link href>` / `<script src>`.
+- **Bearer sent as the session cookie.** The proxy injected the bearer token as
+  the `t3_session_*` cookie too. For requests with a browser `Origin`, T3
+  validates that cookie as a browser session and rejects it (401
+  `invalid_credential`) on every API call and the `/ws` upgrade. The proxy now
+  sends only `Authorization: Bearer` and strips `t3_session_*` cookies; the
+  cookie-name discovery is gone.
+- **Fonts in CSS hit HA's root.** Stylesheets use `url(/assets/...)`. The proxy
+  now rewrites `text/css` bodies, and drops conditional headers on `.css`
+  requests so browsers holding a pre-fix copy get the rewritten one.
+
+Tailnet access is unaffected (it goes straight to `t3 serve`).
+
+
 ## 0.7.5
 
 T3 0.1.7 → 0.1.10. Routine bump via the `/update-t3` skill; release notes were
