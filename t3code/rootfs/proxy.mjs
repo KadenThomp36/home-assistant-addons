@@ -5,12 +5,14 @@
 //   1. AUTH: HA ingress has already authenticated the user (HA login) before it
 //      ever reaches us. T3's server, however, requires a session credential on
 //      its data plane (/api/* + WebSocket) — there is no loopback bypass. So we
-//      inject `Authorization: Bearer <token>` plus the session cookie on every
-//      proxied HTTP request and WS upgrade. The bearer is minted once by run.sh
-//      via `t3 auth session issue` and read from T3_BEARER_FILE. The token never
-//      reaches the browser. T3 ≥0.0.33 scopes its session cookie name per
-//      instance (`t3_session_<port>_<id>`), so the cookie name can't be
-//      hardcoded — it's discovered from upstream `/api/auth/session` metadata.
+//      inject `Authorization: Bearer <token>` on every proxied HTTP request and
+//      WS upgrade. The bearer is minted once by run.sh via `t3 auth session issue`
+//      and read from T3_BEARER_FILE. The token never reaches the browser.
+//      Do NOT also send it as the `t3_session_*` cookie: for requests carrying a
+//      browser Origin, T3 validates that cookie as a browser session, and a bearer
+//      token in it fails with 401 invalid_credential (every API call and the /ws
+//      upgrade -> "Still connecting"). Any t3_session_* cookie from the browser is
+//      stripped for the same reason.
 //
 //   2. INGRESS BASE PATH: HA serves the add-on under /api/hassio_ingress/<token>/
 //      and passes that prefix in the `X-Ingress-Path` header (it strips the prefix
@@ -20,8 +22,8 @@
 //      window.location.origin ONLY (resolvePrimaryEnvironmentHttpUrl overwrites
 //      the pathname, so the ingress sub-path is discarded and every call lands on
 //      HA core → 404) — we also inject a shim into index.html that patches
-//      fetch/WebSocket/EventSource to re-prefix same-host requests with the
-//      ingress path.
+//      fetch/WebSocket/EventSource, plus <link href>/<script src> (Vite's
+//      root-based preloads), to re-prefix same-host requests with the ingress path.
 // -------------------------------------------------------------------------
 
 import http from "node:http";
@@ -52,43 +54,12 @@ try {
   /* best effort */
 }
 
-// Instance-scoped session cookie name (e.g. t3_session_3774_ab12cd34ef56),
-// discovered from the upstream auth metadata. Empty until discovery succeeds;
-// the bearer Authorization header carries auth on its own in the meantime.
-let COOKIE_NAME = "";
-function discoverCookieName(attempt = 0) {
-  http
-    .get(
-      { host: UPSTREAM_HOST, port: UPSTREAM_PORT, path: "/api/auth/session" },
-      (res) => {
-        const chunks = [];
-        res.on("data", (c) => chunks.push(c));
-        res.on("end", () => {
-          try {
-            const name = JSON.parse(Buffer.concat(chunks).toString("utf8"))
-              ?.auth?.sessionCookieName;
-            if (name) {
-              COOKIE_NAME = name;
-              console.log(`[t3code-proxy] session cookie name: ${COOKIE_NAME}`);
-              return;
-            }
-          } catch {
-            /* fall through to retry */
-          }
-          if (attempt < 30) setTimeout(() => discoverCookieName(attempt + 1), 2000);
-        });
-      },
-    )
-    .on("error", () => {
-      if (attempt < 30) setTimeout(() => discoverCookieName(attempt + 1), 2000);
-    });
-}
-discoverCookieName();
-
+// Forward the browser's cookies minus any T3 session cookie (see header comment).
 function cookieHeader(existing) {
-  if (!COOKIE_NAME) return existing || "";
-  const inject = `${COOKIE_NAME}=${BEARER}`;
-  return existing ? `${existing}; ${inject}` : inject;
+  return String(existing || "")
+    .split(/;\s*/)
+    .filter((c) => c && !/^t3_session_/.test(c))
+    .join("; ");
 }
 
 // Injected into index.html <head>. Re-prefixes same-host fetch/WebSocket/
@@ -136,6 +107,19 @@ const INGRESS_SHIM = `<script>(() => {
     Object.setPrototypeOf(PatchedES, OrigES);
     window.EventSource = PatchedES;
   }
+  // Vite's preload helper builds dependency URLs as "/" + "assets/x" (base is
+  // baked in at build time) and assigns them to <link rel=modulepreload|stylesheet>
+  // href. Without this they hit HA's root and 404; a failed CSS preload rejects
+  // and the SPA dies with "T3 Code failed to start".
+  for (const [El, prop] of [[HTMLLinkElement, "href"], [HTMLScriptElement, "src"]]) {
+    const d = Object.getOwnPropertyDescriptor(El.prototype, prop);
+    if (d && d.set) {
+      Object.defineProperty(El.prototype, prop, {
+        ...d,
+        set(v) { d.set.call(this, rewrite(String(v))); },
+      });
+    }
+  }
 })();</script>`;
 
 // Defensive: HA already strips the ingress prefix, but if a request still carries
@@ -159,12 +143,38 @@ const server = http.createServer((creq, cres) => {
   else delete headers.cookie;
   // Force identity encoding so we can rewrite text/html bodies reliably.
   delete headers["accept-encoding"];
+  // Stylesheets are rewritten (below); a 304 would make the browser keep a copy
+  // cached before the rewrite existed, with fonts still pointing at HA's root.
+  if (prefix && /\.css(\?|$)/.test(path)) {
+    delete headers["if-none-match"];
+    delete headers["if-modified-since"];
+  }
 
   const preq = http.request(
     { host: UPSTREAM_HOST, port: UPSTREAM_PORT, method: creq.method, path, headers },
     (pres) => {
       const ctype = String(pres.headers["content-type"] || "");
       const isHtml = ctype.includes("text/html") && prefix;
+      const isCss = ctype.includes("text/css") && prefix;
+
+      if (isCss) {
+        // Stylesheets reference fonts as url(/assets/...), which resolves against
+        // HA's root, not the stylesheet. Prefix them like the HTML refs below.
+        const chunks = [];
+        pres.on("data", (c) => chunks.push(c));
+        pres.on("end", () => {
+          const body = Buffer.concat(chunks)
+            .toString("utf8")
+            .replace(/url\((["']?)\/assets\//g, `url($1${prefix}/assets/`);
+          const outHeaders = { ...pres.headers };
+          delete outHeaders["content-length"];
+          delete outHeaders["etag"];
+          delete outHeaders["last-modified"];
+          cres.writeHead(pres.statusCode || 200, outHeaders);
+          cres.end(body);
+        });
+        return;
+      }
 
       if (!isHtml) {
         cres.writeHead(pres.statusCode || 502, pres.headers);
