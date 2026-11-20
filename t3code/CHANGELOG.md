@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.7
+
+T3 0.1.10 → 0.1.11. Routine bump via the `/update-t3` skill; release notes were
+reviewed for changes to the add-on's CLI/API surfaces before running.
+
+
 ## 0.7.6
 
 Fixes the ingress web UI (HA sidebar / "Open Web UI"), which showed "T3 Code
