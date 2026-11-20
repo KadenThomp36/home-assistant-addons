@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.8
+
+New `environment_label` option (default "Home Assistant"): the name this
+environment shows in T3's environment picker, thread search, linked-environment
+lists and pairing prompts. Before, it fell back to the container hostname
+(`dcc88dd2-t3code`). run.sh writes it to `/etc/machine-info` as
+`PRETTY_HOSTNAME`, which T3 reads at startup. Clear it to go back to the hostname.
+
+
 ## 0.7.7
 
 T3 0.1.10 → 0.1.11. Routine bump via the `/update-t3` skill; release notes were

@@ -105,6 +105,22 @@ install_persistent_packages() {
     fi
 }
 
+# T3 labels the environment from PRETTY_HOSTNAME in /etc/machine-info, then the
+# hostname (here the Supervisor's "dcc88dd2-t3code"). The container filesystem is
+# rebuilt on every update, so write it on each start, before t3 serve reads it.
+set_environment_label() {
+    local label
+    label="$(bashio::config 'environment_label' 'Home Assistant')"
+    label="${label//[\"\\$\`]/}"
+    if [ -z "${label}" ] || [ "${label}" = "null" ]; then
+        rm -f /etc/machine-info
+        bashio::log.info "No environment_label set; T3 will use the hostname."
+        return
+    fi
+    printf 'PRETTY_HOSTNAME="%s"\n' "${label}" > /etc/machine-info
+    bashio::log.info "T3 environment label: ${label}"
+}
+
 start_t3() {
     bashio::log.info "Starting T3 Code server on loopback :${UPSTREAM_PORT}..."
     t3 serve \
@@ -209,6 +225,7 @@ main() {
     seed_settings
     install_skills
     install_persistent_packages
+    set_environment_label
     start_t3
     wait_for_t3
     mint_bearer
