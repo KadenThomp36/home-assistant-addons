@@ -57,6 +57,7 @@ Your own projects and their git history live under `/data/t3code` state; use
 
 | Option                     | Default            | Description                                                        |
 |----------------------------|--------------------|--------------------------------------------------------------------|
+| `environment_label`        | `Home Assistant`   | Name shown in T3's environment picker, thread search and pairing. |
 | `claude_model`             | `claude-opus-4-8`  | Default Claude model seeded into `settings.json` **on first run**. |
 | `claude_effort`            | `high`             | Reasoning effort for the default model (`high`/`medium`/`low`).    |
 | `persistent_apk_packages`  | `[]`               | Extra Alpine packages installed at every start.                    |
